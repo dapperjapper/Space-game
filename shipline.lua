@@ -5,7 +5,7 @@ local ShipLine = Class{
     self.granularity = 0.1882
     self.cam = cam
     self.future = nil
-    self.points = PointList()
+    self.points = nil -- interface points, like crash notifiers and end of sim
     self:recalculate()
     
     self.hotPoint = nil
@@ -18,8 +18,20 @@ function ShipLine:recalculate()
   self.future = Future(self.sprites, self.nav)
   self.future.granularity = self.granularity
   self.line = self.future:shipLine(0, 10)
-  self.lineList = self.future:shipLineList(0, 10)
   self.nav:updatePositions(self.future)
+  self:updatePoints()
+end
+
+function ShipLine:extend(t)
+  self.line = self.future:shipLine(0, self.line:last().time+t)
+  self:updatePoints()
+end
+
+function ShipLine:updatePoints()
+  self.points = PointList()
+  local endp = Point(self.line:last().x, self.line:last().y, "end")
+  endp.time = self.line:last().time
+  self.points:add(endp)
 end
 
 function ShipLine:keypressed(key, code)
@@ -46,6 +58,9 @@ function ShipLine:mousepressed(x, y, button)
         self.activePoint = self.nav:add(navPoint)
         self:recalculate()
         interacted = true
+      elseif self.hotPoint.type=="end" then
+        print("extend this bitch")
+        self:extend(10)
       else
         self.activePoint = self.hotPoint
         interacted = true
@@ -56,13 +71,15 @@ function ShipLine:mousepressed(x, y, button)
       if not self.nav:at(self.activePoint.time + self.activePoint.length + navLengthPower) then
         self.activePoint.length = self.activePoint.length + navLengthPower
         self:recalculate()
-        interacted = true
       end
+      interacted = true
     end
   elseif button == 'wd' then
-    if self.activePoint and self.activePoint.type=='nav' and self.activePoint.length > navLengthPower*2 then
-      self.activePoint.length = self.activePoint.length - navLengthPower
-      self:recalculate()
+    if self.activePoint and self.activePoint.type=='nav' then
+      if self.activePoint.length > navLengthPower*2 then
+        self.activePoint.length = self.activePoint.length - navLengthPower
+        self:recalculate()
+      end
       interacted = true
     end
   elseif button == 'r' then
@@ -97,46 +114,63 @@ end
 function ShipLine:update()
   -- look for closest point on line
   local mouse = Vector(self.cam:mousepos())
-  local distMin = self.line[1]:vector():dist(mouse)
-  self.hotPoint = self.line[1]
-  for i=2,#self.line do
-    local dist = self.line[i]:vector():dist(mouse)
+  local distMin = self.line.points[1]:vector():dist(mouse)
+  self.hotPoint = self.line.points[1]
+  for i=2,#self.line.points do
+    local dist = self.line.points[i]:vector():dist(mouse)
     local pointAtI = self:pointAtI(i)
     if pointAtI then dist = dist - 10 end
     
     if dist < distMin then
       distMin = dist
-      self.hotPoint = self.line[i]
+      self.hotPoint = self.line.points[i]
       if pointAtI then self.hotPoint = pointAtI end
     end
   end
   if distMin*cam.scale > 10 then self.hotPoint=nil end -- No hover unless 10 pixels away
+  
+  if self.hotPoint and self.hotPoint.type == "end" then
+    local pcam = self.hotPoint:inCameraCoords(self.cam)
+    gui.Label{text="Click to extend", pos={pcam.x, pcam.y}}
+  end
 end
 
 function ShipLine:draw()
+  
+  -- Draw ship line
   love.graphics.setLineWidth(1)
-  love.graphics.line(unpack(self.lineList))
-      
+  love.graphics.setColor(255, 255, 255)
+  love.graphics.line(unpack( self.line:inCameraCoords(self.cam):asLineList() ))
+  
+  -- Draw interface points in their colors
+  for _,p in ipairs(self.points.points) do
+    local pcam = p:inCameraCoords(self.cam)
+    if p.type == "end" then love.graphics.setColor(255, 255, 255) end
+    love.graphics.circle('fill', pcam.x, pcam.y, 4)
+  end
+  
+  -- Draw unselected navs in bold white
+  love.graphics.setLineWidth(3)
   for _,p in ipairs(self.nav.points) do
-    love.graphics.setLineWidth(3)
-    love.graphics.circle('fill', p.x,p.y, 4)    
-    love.graphics.line(unpack(p:shipLineList(self.future)))
+    local pcam = p:inCameraCoords(self.cam)
+    love.graphics.circle('fill', pcam.x, pcam.y, 4)    
+    love.graphics.line(unpack( p:shipLine(self.future):inCameraCoords(self.cam):asLineList() ))
   end
   
+  -- Draw over selected nav in green
+  love.graphics.setColor(0, 255, 0)
   if self.activePoint and self.activePoint.type=='nav' then
-    love.graphics.setColor(0, 255, 0)
-    love.graphics.circle('fill', self.activePoint.x,self.activePoint.y, 4)    
-    love.graphics.line(unpack(self.activePoint:shipLineList(self.future)))
-    
-    -- for i=startI,endI,2 do
-    --   love.graphics.line(line[i],line[i+1])
-    -- end
+    local pcam = self.activePoint:inCameraCoords(self.cam)
+    love.graphics.circle('fill', pcam.x, pcam.y, 4)    
+    love.graphics.line(unpack( self.activePoint:shipLine(self.future):inCameraCoords(self.cam):asLineList() ))
   end
   
+  -- Draw hovering circle on "hotPoint"
   love.graphics.setLineWidth(1)
   love.graphics.setColor(255, 255, 255)
   if self.hotPoint then
-    love.graphics.circle('line', self.hotPoint.x,self.hotPoint.y, 6)
+    local pcam = self.hotPoint:inCameraCoords(self.cam)
+    love.graphics.circle('line', pcam.x, pcam.y, 6)
   end
 end
 

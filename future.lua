@@ -126,14 +126,13 @@ function Future:shipLine(fromT, toT)
   
   local fromIndex = self:indexAtTime(fromT)
   local toIndex = self:indexAtTime(toT)
-  local line = {}
+  local line = PointLine()
   
   for i=fromIndex,toIndex do
-    point = Point(self.sim[i][self.shipSprI].x, self.sim[i][self.shipSprI].y)
+    point = Point(self.sim[i][self.shipSprI].x, self.sim[i][self.shipSprI].y, "shipPath")
     point.time = self.sim[i].time
-    point.type = "shipPath"
     -- point.index = i
-    table.insert(line, point)
+    line:add(point)
   end
   
   return line

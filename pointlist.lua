@@ -6,6 +6,7 @@ local PointList = Class{
 
 function PointList:add(point)
   table.insert( self.points, point )
+  print(point.time, point.type)
   return point
 end
 
@@ -27,6 +28,14 @@ end
 
 function PointList:updatePositions(future)
   for _,p in ipairs(self.points) do p:updatePosition(future) end
+end
+
+function PointList:inCameraCoords(cam)
+  local pointList = PointList()
+  for _,p in ipairs(self.points) do
+    table.insert( pointList.points, p:inCameraCoords(cam) )
+  end
+  return pointList
 end
 
 return PointList

@@ -4,6 +4,7 @@ Future = require "future"
 Sprite = require "sprite"
 Point = require "point"
 PointList = require "pointlist"
+PointLine = require "pointline"
 NavPoint = require "navpoint"
 Nav = require "nav"
 ShipLine = require "shipline"
@@ -59,6 +60,27 @@ function love.load()
     
   -- nav = Nav()
   cam = Camera(planet.x, planet.y)
+  function cam:zoomPos(zoom, x, y)
+    -- http://stackoverflow.com/a/13317413
+    local viewRect = Vector(love.graphics.getWidth(), love.graphics.getHeight())*self.scale
+    local diff = viewRect * (1 - 1 / zoom)
+    local percentMouse = Vector()
+    percentMouse.x = (Vector(self:mousepos()).x - Vector(self:pos()).x) / viewRect.x
+    percentMouse.y = (Vector(self:mousepos()).y - Vector(self:pos()).y) / viewRect.y
+    local delta = percentMouse:permul(diff)
+    cam:move( delta:unpack() )
+    cam:zoom(zoom)
+  end
+  function cam:lineToLineListInCameraCoords(line)
+    local lineList = {}
+    for _,p in ipairs(line) do
+      local x, y = self:cameraCoords(p:vector():unpack())
+      table.insert( lineList, x)
+      table.insert( lineList, y)
+    end
+    return lineList
+  end
+  
   shipLine = ShipLine(sprites, cam)
   --hotPoint = nil
   
@@ -112,9 +134,9 @@ function love.mousepressed(x, y, button)
     love.mouse.start = Vector(x, y)
     shipLine:deselect()
   elseif button == 'wu' then
-    cam:zoom(zoomPower)
+    cam:zoomPos(zoomPower, x, y)
   elseif button == 'wd' then
-    cam:zoom(1/zoomPower)
+    cam:zoomPos(1/zoomPower, x, y)
   end
 end
 
@@ -159,6 +181,7 @@ function love.update(dt)
   if gui.Checkbox{text = "Plan Course", id="plan", checked=(mode=="plan")} then
     mode="plan"
   end
+  gui.Label{text = "Granularity", pos={20, 0}}
   if gui.Slider{info = granSlider} then shipLine.granularity = granSlider.value; shipLine:recalculate() end
   gui.group.pop{}
 end
@@ -169,11 +192,11 @@ function love.draw()
   love.graphics.setColor(255, 255, 255)
   love.graphics.setLineWidth(1)
   
-  love.graphics.circle('fill', sprites[2].x, sprites[2].y, 10)
-  
-  shipLine:draw()
+  love.graphics.circle('fill', sprites[2].x, sprites[2].y, sprites[2].radius, sprites[2].radius*cam.scale)
   
   cam:detach()
+  shipLine:draw()
+  
   
   gui.core.draw()
 end
