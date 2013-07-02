@@ -6,7 +6,6 @@ local PointList = Class{
 
 function PointList:add(point)
   table.insert( self.points, point )
-  print(point.time, point.type)
   return point
 end
 

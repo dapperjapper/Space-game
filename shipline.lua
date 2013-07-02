@@ -111,6 +111,34 @@ function ShipLine:pointAtI(index)
   end
 end
 
+function radiusRectangle(w, h, r)
+  -- http://stackoverflow.com/a/3197924
+  local vx = math.cos(r)
+  local vy = math.sin(r)
+
+  local x1 = -h/2
+  local y1 = -w/2
+  local x2 = h/2
+  local y2 = w/2
+  
+  local times = {}
+  if vx ~= 0 then
+    times[1] = x1/vx
+    times[2] = x2/vx
+  end
+  if vy ~= 0 then
+    times[3] = y1/vy
+    times[4] = y2/vy
+  end
+  
+  local minT = w+h -- larger than all
+  for _,v in ipairs(times) do
+    if v<minT and v>0 then minT = v end
+  end
+  
+  return minT
+end
+
 function ShipLine:update()
   -- look for closest point on line
   local mouse = Vector(self.cam:mousepos())
@@ -127,11 +155,29 @@ function ShipLine:update()
       if pointAtI then self.hotPoint = pointAtI end
     end
   end
-  if distMin*cam.scale > 10 then self.hotPoint=nil end -- No hover unless 10 pixels away
+  if distMin*cam.scale > 20 then self.hotPoint=nil end -- No hover unless 10 pixels away
   
   if self.hotPoint and self.hotPoint.type == "end" then
     local pcam = self.hotPoint:inCameraCoords(self.cam)
-    gui.Label{text="Click to extend", pos={pcam.x, pcam.y}}
+    gui.Label{text="Click to extend", pos={pcam.x, pcam.y}, align = "center", draw = function(state, text, align, x,y,w,h)
+    	local f = assert(love.graphics.getFont())
+    	w = f:getWidth(text)+8
+    	h = f:getHeight(text)+4
+    	local point = Vector(x, y)
+    	local middle = Vector(x - w/2, y - h/2)
+    	local direction = Vector(love.mouse.getPosition()) - point
+    	direction:normalize_inplace()
+    	local angle = -math.atan2(direction:unpack())
+    	local distance = radiusRectangle(w, h, angle) * 1.1 + 10
+    	direction = direction * distance
+    	local pos = middle - direction
+    	
+    	love.graphics.setColor(0, 0, 0)
+    	love.graphics.rectangle( "fill", pos.x, pos.y, w, h )
+    	love.graphics.setColor(255, 255, 255)
+    	love.graphics.rectangle( "line", pos.x, pos.y, w, h )
+    	love.graphics.print(text, pos.x+4, pos.y+2)
+    end}
   end
 end
 
