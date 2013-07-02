@@ -2,17 +2,20 @@ Class = require 'hump.class'
 Vector = require "hump.vector"
 Future = require "future"
 Sprite = require "sprite"
+Point = require "point"
+PointList = require "pointlist"
 NavPoint = require "navpoint"
 Nav = require "nav"
 ShipLine = require "shipline"
 Camera = require "hump.camera"
+inspect = require 'inspect'
 
 require 'lovedebug'
 _lovedebugpresskey = "tab"
 
 gui = require "quickie"
 
-granSlider = {value = 0.32, min = 1, max = 0.01}
+granSlider = {value = 0.1882, min = 1, max = 0.01}
 
 function love.load()
   love.physics.setMeter(10)
@@ -54,15 +57,15 @@ function love.load()
   planet.mass = 1000
   table.insert( sprites, planet )
     
-  nav = Nav()
+  -- nav = Nav()
   cam = Camera(planet.x, planet.y)
   shipLine = ShipLine(sprites, cam)
-  --activeNavPoint = nil
+  --hotPoint = nil
   
   --recalculate()
   
   love.graphics.setMode(650, 650, false, true, 0)
-  
+    
   --mode = "plan"
   
   -- for n in pairs(_G) do print(n) end -- TODO: clean global variables
@@ -93,32 +96,31 @@ function love.keyreleased(key, code)
   -- end
 end
 
+function mouseinzone()
+  return love.mouse.getY() > 30 -- TODO: clunky
+end
+
 function love.mousepressed(x, y, button)
-  local zoomPower = 1.05
+  local zoomPower = 1.1
+  
+  if not mouseinzone() then return end
+  
+  if shipLine:mousepressed(x, y, button) then return true end -- shipLine captured event
   
   if button == "l" then
-        if shipLine.hoverPoint and not love.keyboard.isDown(' ') then
-          shipLine:mousepressed(x, y, button)
-        else
-          love.mouse.startCam = Vector(cam:pos())
-          love.mouse.start = Vector(x, y)
-        end
+    love.mouse.startCam = Vector(cam:pos())
+    love.mouse.start = Vector(x, y)
+    shipLine:deselect()
   elseif button == 'wu' then
-        if shipLine.activeNavPoint and not love.keyboard.isDown(' ') then
-          shipLine:mousepressed(x, y, button)
-        else
-          cam:zoom(zoomPower)
-        end
+    cam:zoom(zoomPower)
   elseif button == 'wd' then
-        if shipLine.activeNavPoint and not love.keyboard.isDown(' ') then
-          shipLine:mousepressed(x, y, button)
-        else
-          cam:zoom(1/zoomPower)
-        end
+    cam:zoom(1/zoomPower)
   end
 end
 
 function love.mousereleased(x, y, button)
+  if not mouseinzone() then return end
+  
    if button == "l" then
      love.mouse.start = nil
      love.mouse.startCam = Vector(cam:pos())
@@ -147,12 +149,14 @@ function love.update(dt)
   --   if distMin > 50 then hoverPoint=nil end
   -- end
   
+  --if type(gui.mouse.getHot())=='table' then print("hey"); print(gui.mouse.getHot()) end
+  
   gui.group.push{grow = "right", pos={10, 0}}
   gui.Label{text = 'Mode'}
   if gui.Checkbox{text = "Nav", checked=(mode=="nav")} then
     mode="nav"
   end
-  if gui.Checkbox{text = "Plan Course", checked=(mode=="plan")} then
+  if gui.Checkbox{text = "Plan Course", id="plan", checked=(mode=="plan")} then
     mode="plan"
   end
   if gui.Slider{info = granSlider} then shipLine.granularity = granSlider.value; shipLine:recalculate() end

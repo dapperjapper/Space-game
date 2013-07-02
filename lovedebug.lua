@@ -421,7 +421,7 @@ _G["love"].run = function()
 					_Debug.handleMouse(a, b, c)
 				elseif e == "mousepressed" and not _Debug.drawOverlay then
 					if love.mousepressed then
-						love.mousepressed(a, b, c)
+						--love.mousepressed(a, b, c)
 					end
 				end
 				if not skipEvent then

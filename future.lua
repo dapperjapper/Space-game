@@ -6,9 +6,7 @@ local Future = Class{
     self.sprites.time = 0
     table.insert(self.sim, Class.clone(self.sprites))
     
-    if activeNavPoint then print('future', nav.points[activeNavPoint].length) end
     self.nav = nav
-    if activeNavPoint then print('future', self.nav.points[activeNavPoint].length) end
     
     self.world = love.physics.newWorld(0, 0, false)
     
@@ -74,7 +72,6 @@ function Future:simulateTo(t)
     end
     
     if self.nav:at(self.sprites.time) then
-      print('after:at')
       local vel = Vector(ship:getLinearVelocity())
       ship:applyForce((vel*self.sprites[self.shipSprI].power):unpack())
     end
@@ -120,15 +117,21 @@ function Future:at(t)
   return self.sim[self:indexAtTime(t)]
 end
 
+function Future:shipAt(t)
+  return self:at(t)[self.shipSprI]
+end
+
 function Future:shipLine(fromT, toT)
   self:simulateTo(toT)
   
   local fromIndex = self:indexAtTime(fromT)
   local toIndex = self:indexAtTime(toT)
   local line = {}
+  
   for i=fromIndex,toIndex do
-    point = Vector(self.sim[i][self.shipSprI].x, self.sim[i][self.shipSprI].y)
+    point = Point(self.sim[i][self.shipSprI].x, self.sim[i][self.shipSprI].y)
     point.time = self.sim[i].time
+    point.type = "shipPath"
     -- point.index = i
     table.insert(line, point)
   end
