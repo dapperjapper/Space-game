@@ -2,7 +2,7 @@ local Future = Class{
   init = function(self, sprites, nav)
     self.sim = {}
     
-    self.sprites = Class.clone(sprites)
+    self.sprites = Class.clone(sprites) -- destroys class structure, leaves table, oh well
     self.sprites.time = 0
     table.insert(self.sim, Class.clone(self.sprites))
     
@@ -123,7 +123,7 @@ function Future:indexAtTime(t)
                end
           end
       end
-      return low -- close enough (time is in between low and high sim points)
+      return high -- close enough (time is in between low and high sim points)
   end
   return binarySearch(self.sim, t)
 end
@@ -168,19 +168,28 @@ function Future:shipLine(fromT, toT)
   return line
 end
 
--- function Future:shipLineList(fromT, toT)
---   self:simulateTo(toT)
---   
---   local fromIndex = self:indexAtTime(fromT)
---   local toIndex = self:indexAtTime(toT)
---   local line = {}
---   for i=fromIndex,toIndex do
---     table.insert(line, self.sim[i][self.shipSprI].x)
---     table.insert(line, self.sim[i][self.shipSprI].y)
---   end
---   
---   return line
--- end
+function Future:atInterpolate(t)
+  self:simulateTo(t)
+  
+  if self.collisionCourse and t>self.sim[#self.sim].time then return self.sim[#self.sim] end
+  
+  local low = self.sim[self:indexAtTime(t)]
+  local high = self.sim[self:indexAtTime(t)+1]
+  local dTime = t-low.time
+  local duration = high.time-low.time
+  -- https://code.google.com/p/tweener/source/browse/trunk/as3/caurina/transitions/Equations.as
+  local function interpolate(t, startV, endV, duration)
+    return (endV-startV)*t/duration + startV;
+  end
+  
+  local sprites = Class.clone(low)
+  for i,s in ipairs(sprites) do
+    s.x = interpolate(dTime, low[i].x, high[i].x, duration)
+    s.y = interpolate(dTime, low[i].y, high[i].y, duration)
+    s.r = interpolate(dTime, low[i].r, high[i].r, duration)
+  end
+  return sprites
+end
 
 function Future:destroy()
   self.world:destroy()

@@ -13,7 +13,7 @@ return function(w)
 	if keyboard.hasFocus(id) then
 		keyboard.clearFocus()
 	end
-
+  
 	core.registerDraw(id, w.draw or core.style.Tooltip,
 		w.text, w.pos[1], w.pos[2])
 

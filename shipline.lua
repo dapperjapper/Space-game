@@ -8,12 +8,14 @@ local ShipLine = Class{
     self.points = nil -- interface points, like crash notifiers and end of sim
     self:recalculate()
     
+    self.goForward = 0
+    self.goneForward = 0
     self.hotPoint = nil
     self.activePoint = nil
   end
 }
 
-function ShipLine:recalculate()
+function ShipLine:recalculate(startChangedT)
   local lastNav = self.nav:last()
   if lastNav then lastNav=lastNav:endTime() else lastNav=0 end
   local endTime = math.max(20, lastNav)
@@ -58,28 +60,36 @@ function ShipLine:mousepressed(x, y, button)
   
   if button == "l" then
     if self.hotPoint then
-      if self.hotPoint.type=="shipPath" then
-        if self.nav:at(self.hotPoint.time) then return false end
-        local navPoint = NavPoint()
-        navPoint.x, navPoint.y = self.hotPoint:vector():unpack()
-        -- navPoint.index = hoverPoint.index
-        navPoint.time = self.hotPoint.time
-        navPoint.length = 0
-        self.activePoint = self.nav:add(navPoint)
-        self:recalculate()
-        interacted = true
-      elseif self.hotPoint.type=="end" then
-        self:extend(10)
-      else
-        self.activePoint = self.hotPoint
-        interacted = true
+      if mode == "plan" then
+        if self.hotPoint.type=="shipPath" then
+          -- add nav
+          if self.nav:at(self.hotPoint.time) then return false end -- point already occupied
+          local navPoint = NavPoint()
+          navPoint.x, navPoint.y = self.hotPoint:vector():unpack()
+          -- navPoint.index = hoverPoint.index
+          navPoint.time = self.hotPoint.time
+          navPoint.length = 0
+          self.activePoint = self.nav:add(navPoint)
+          self:recalculate()
+        elseif self.hotPoint.type=="end" then
+          -- extend
+          self:extend(10)
+        else
+          -- select
+          self.activePoint = self.hotPoint
+        end
+      elseif mode == "ff" then
+        print ('fast forward to ', self.hotPoint.time)
+        self:deselect()
+        self:fastForward(self.hotPoint.time)
       end
+      interacted = true
     end
   elseif button == 'wu' then
     if self.activePoint and self.activePoint.type=='nav' then
       if not self.nav:at(self.activePoint.time + self.activePoint.length + navLengthPower) then
         self.activePoint.length = self.activePoint.length + navLengthPower
-        self:recalculate()
+        self:recalculate(self.activePoint.time)
       end
       interacted = true
     end
@@ -87,7 +97,7 @@ function ShipLine:mousepressed(x, y, button)
     if self.activePoint and self.activePoint.type=='nav' then
       if self.activePoint.length > navLengthPower*2 then
         self.activePoint.length = self.activePoint.length - navLengthPower
-        self:recalculate()
+        self:recalculate(self.activePoint.time)
       end
       interacted = true
     end
@@ -101,6 +111,15 @@ function ShipLine:mousepressed(x, y, button)
   end
   
   return interacted
+end
+
+function ShipLine:fastForward(t)
+  --self:recalculate()
+  local transitionLength = 2 -- sec
+  
+  self.goForwardIncrements = t/transitionLength
+  self.goForward = t
+  self.goneForward = 0
 end
 
 function ShipLine:mousereleased(x, y, button)
@@ -148,7 +167,28 @@ function radiusRectangle(w, h, r)
   return minT
 end
 
-function ShipLine:update()
+function ShipLine:update(dt)
+  if self.goForward > 0 then
+    self:updateSprites(self.future:atInterpolate(self.goneForward)) -- run by main, but updates self.sprites too because they are linked
+    if self.line:first().time < self.goneForward then -- remove parts of line we've gone over
+      table.remove(self.line.points, 1)
+    end
+    local navPoint = self.nav:pointAtI(self.future:indexAtTime(self.goneForward), self.future)
+    if navPoint then
+      self.nav:remove(navPoint)
+    end
+    local point = self.points:pointAtI(self.future:indexAtTime(self.goneForward), self.future)
+    if point then
+      self.points:remove(point)
+    end
+    
+    self.goForward = self.goForward - (dt*self.goForwardIncrements)
+    self.goneForward = self.goneForward + (dt*self.goForwardIncrements)
+    if (self.goForward <= 0) then
+      self:recalculate()
+    end
+  end
+  
   -- look for closest point on line
   local mouse = Vector(self.cam:mousepos())
   local distMin = self.line.points[1]:vector():dist(mouse)
@@ -173,6 +213,9 @@ function ShipLine:update()
     elseif self.hotPoint.type == "collision" then
       local pcam = self.hotPoint:inCameraCoords(self.cam)
       gui.Tooltip{text="WARNING: Collision course", pos={pcam.x, pcam.y}}
+    elseif mode == 'ff' then
+      local pcam = self.hotPoint:inCameraCoords(self.cam)
+      gui.Tooltip{text="Click to jump to here", pos={pcam.x, pcam.y}}
     end
   end
 end
@@ -197,6 +240,7 @@ function ShipLine:draw()
   
   -- Draw unselected navs in bold white
   love.graphics.setLineWidth(3)
+  love.graphics.setColor(255, 255, 255)
   for _,p in ipairs(self.nav.points) do
     local pcam = p:inCameraCoords(self.cam)
     love.graphics.circle('fill', pcam.x, pcam.y, 4)    

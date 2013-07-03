@@ -11,7 +11,6 @@ end
 
 function PointList:remove(point)
   for i,p in ipairs(self.points) do
-    print(inspect(p), inspect(point))
     if p == point then table.remove( self.points, i ) end
   end
   return point

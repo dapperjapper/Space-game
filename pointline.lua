@@ -17,6 +17,10 @@ function PointLine:inCameraCoords(cam)
   return pointLine
 end
 
+function PointLine:first()
+  return self.points[1]
+end
+
 function PointLine:last()
   return self.points[#self.points]
 end
