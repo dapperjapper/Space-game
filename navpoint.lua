@@ -16,17 +16,21 @@ function NavPoint:updatePosition(future)
   self.y = ship.y
 end
 
-function NavPoint:shipLine(future)
-  return future:shipLine(self.time, self.time+self.length)
+function NavPoint:endTime()
+  return self.time+self.length
 end
 
-function NavPoint:shipLineList(future)
-  local lineList = future:shipLineList(self.time, self.time+self.length)
-  if #lineList < 4 then -- If the line doesn't even cover to points than add an extra point
-    table.insert(lineList, lineList[1])
-    table.insert(lineList, lineList[2])
-  end
-  return lineList
+function NavPoint:shipLine(future)
+  return future:shipLine(self.time, self:endTime())
 end
+
+-- function NavPoint:shipLineList(future)
+--   local lineList = future:shipLineList(self.time, self:endTime())
+--   if #lineList < 4 then -- If the line doesn't even cover to points than add an extra point
+--     table.insert(lineList, lineList[1])
+--     table.insert(lineList, lineList[2])
+--   end
+--   return lineList
+-- end
 
 return NavPoint

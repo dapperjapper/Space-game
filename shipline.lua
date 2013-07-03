@@ -14,10 +14,14 @@ local ShipLine = Class{
 }
 
 function ShipLine:recalculate()
+  local lastNav = self.nav:last()
+  if lastNav then lastNav=lastNav:endTime() else lastNav=0 end
+  local endTime = math.max(20, lastNav)
+  
   if self.future then self.future:destroy(); self.future=nil end
   self.future = Future(self.sprites, self.nav)
   self.future.granularity = self.granularity
-  self.line = self.future:shipLine(0, 10)
+  self.line = self.future:shipLine(0, endTime)
   self.nav:updatePositions(self.future)
   self:updatePoints()
 end
@@ -29,9 +33,15 @@ end
 
 function ShipLine:updatePoints()
   self.points = PointList()
-  local endp = Point(self.line:last().x, self.line:last().y, "end")
-  endp.time = self.line:last().time
-  self.points:add(endp)
+  if self.future.collisionCourse then
+    local endp = Point(self.line:last().x, self.line:last().y, "collision")
+    endp.time = self.line:last().time
+    self.points:add(endp)
+  else
+    local endp = Point(self.line:last().x, self.line:last().y, "end")
+    endp.time = self.line:last().time
+    self.points:add(endp)
+  end
 end
 
 function ShipLine:keypressed(key, code)
@@ -59,7 +69,6 @@ function ShipLine:mousepressed(x, y, button)
         self:recalculate()
         interacted = true
       elseif self.hotPoint.type=="end" then
-        print("extend this bitch")
         self:extend(10)
       else
         self.activePoint = self.hotPoint
@@ -157,27 +166,14 @@ function ShipLine:update()
   end
   if distMin*cam.scale > 20 then self.hotPoint=nil end -- No hover unless 10 pixels away
   
-  if self.hotPoint and self.hotPoint.type == "end" then
-    local pcam = self.hotPoint:inCameraCoords(self.cam)
-    gui.Label{text="Click to extend", pos={pcam.x, pcam.y}, align = "center", draw = function(state, text, align, x,y,w,h)
-    	local f = assert(love.graphics.getFont())
-    	w = f:getWidth(text)+8
-    	h = f:getHeight(text)+4
-    	local point = Vector(x, y)
-    	local middle = Vector(x - w/2, y - h/2)
-    	local direction = Vector(love.mouse.getPosition()) - point
-    	direction:normalize_inplace()
-    	local angle = -math.atan2(direction:unpack())
-    	local distance = radiusRectangle(w, h, angle) * 1.1 + 10
-    	direction = direction * distance
-    	local pos = middle - direction
-    	
-    	love.graphics.setColor(0, 0, 0)
-    	love.graphics.rectangle( "fill", pos.x, pos.y, w, h )
-    	love.graphics.setColor(255, 255, 255)
-    	love.graphics.rectangle( "line", pos.x, pos.y, w, h )
-    	love.graphics.print(text, pos.x+4, pos.y+2)
-    end}
+  if self.hotPoint then
+    if self.hotPoint.type == "end" then
+      local pcam = self.hotPoint:inCameraCoords(self.cam)
+      gui.Tooltip{text="Click to extend", pos={pcam.x, pcam.y}}
+    elseif self.hotPoint.type == "collision" then
+      local pcam = self.hotPoint:inCameraCoords(self.cam)
+      gui.Tooltip{text="WARNING: Collision course", pos={pcam.x, pcam.y}}
+    end
   end
 end
 
@@ -191,7 +187,11 @@ function ShipLine:draw()
   -- Draw interface points in their colors
   for _,p in ipairs(self.points.points) do
     local pcam = p:inCameraCoords(self.cam)
-    if p.type == "end" then love.graphics.setColor(255, 255, 255) end
+    if p.type == "end" then
+      love.graphics.setColor(255, 255, 255)
+    elseif p.type == "collision" then
+      love.graphics.setColor(255, 0, 0)
+    end
     love.graphics.circle('fill', pcam.x, pcam.y, 4)
   end
   

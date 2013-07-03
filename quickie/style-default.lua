@@ -79,6 +79,27 @@ local function Label(state, text, align, x,y,w,h)
 	love.graphics.print(text, x,y)
 end
 
+local function Tooltip(state, text, x, y)
+	local f = assert(love.graphics.getFont())
+	
+	w = f:getWidth(text)+8
+	h = f:getHeight(text)+4
+	local point = Vector(x, y)
+	local middle = Vector(x - w/2, y - h/2)
+	local direction = Vector(love.mouse.getPosition()) - point
+	direction:normalize_inplace()
+	local angle = -math.atan2(direction:unpack())
+	local distance = radiusRectangle(w, h, angle) * 1.1 + 10
+	direction = direction * distance
+	local pos = middle - direction
+	
+	love.graphics.setColor(0, 0, 0)
+	love.graphics.rectangle( "fill", pos.x, pos.y, w, h )
+	love.graphics.setColor(255, 255, 255)
+	love.graphics.rectangle( "line", pos.x, pos.y, w, h )
+	love.graphics.print(text, pos.x+4, pos.y+2)
+end
+
 local function Slider(state, fraction, vertical, x,y,w,h)
 	local c = color[state]
 	
@@ -175,6 +196,7 @@ return {
 
 	Button   = Button,
 	Label    = Label,
+	Tooltip  = Tooltip,
 	Slider   = Slider,
 	Slider2D = Slider2D,
 	Input    = Input,

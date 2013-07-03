@@ -18,9 +18,19 @@ function Nav:at(t)
     end
   end
   
-  if maxPoint and maxPoint.time+maxPoint.length >= t then
+  if maxPoint and maxPoint:endTime() >= t then
     return maxPoint
   else return false end
+end
+
+function Nav:last()
+  local maxPoint = nil
+  for _,p in ipairs(self.points) do
+    if not maxPoint or p.time > maxPoint.time then
+      maxPoint = p
+    end
+  end
+  return maxPoint
 end
 
 return Nav

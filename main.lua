@@ -42,9 +42,9 @@ function love.load()
   
   ship = Sprite()
   ship.type = "ship"
-  ship.x = 650/2-75
+  ship.x = 650/2-100
   ship.y = 650/2
-  ship.dy = 20
+  ship.dy = -10--20
   ship.power = 0.5
   ship.mass = 1 -- TODO: what should this be??
   ship.size = 1 -- circle collision radius
@@ -126,7 +126,7 @@ function love.update(dt)
   shipLine:update()
     
   gui.group.push{grow = "right", pos={10, 0}}
-  gui.Label{text = "Granularity", pos={20, 0}}
+  gui.Label{text = "Granularity"}
   if gui.Slider{info = granSlider} then shipLine.granularity = granSlider.value; shipLine:recalculate() end
   gui.group.pop{}
 end
@@ -142,7 +142,11 @@ function love.draw()
   shipLine:draw()  
   gui.core.draw()
   
-  love.graphics.setColor(24, 167, 181)
+  love.graphics.setColor(255, 255, 255)
   local shippos = Vector(cam:cameraCoords(sprites[1].x, sprites[1].y))
-  love.graphics.polygon('fill',shippos.x, shippos.y+5, shippos.x+3, shippos.y-5, shippos.x-3, shippos.y-5)
+  love.graphics.push()
+  love.graphics.translate(shippos.x, shippos.y)
+  love.graphics.rotate(shipLine.future:shipAt(0.01).r)
+  love.graphics.polygon('fill',0, 10, 5, -10, -5, -10)
+  love.graphics.pop()
 end
