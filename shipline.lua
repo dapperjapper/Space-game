@@ -16,6 +16,7 @@ local ShipLine = Class{
 }
 
 function ShipLine:recalculate(startChangedT) -- TODO: optimize for nav changes only recalculate after the nav
+  -- TODO: Should all this be ShipLine's responsibilty? Poor shipline
   local lastNav = self.nav:last()
   if lastNav then lastNav=lastNav:endTime() else lastNav=0 end
   local endTime = math.max(10, lastNav)
@@ -70,7 +71,7 @@ function ShipLine:mousepressed(x, y, button)
           -- navPoint.index = hoverPoint.index
           navPoint.time = self.hotPoint.time
           navPoint.length = 0
-          self.activePoint = self.nav:add(navPoint)
+          self.activePoint = self.nav:add(navPoint) -- TODO: nav directionality
           self:recalculate()
         elseif self.hotPoint.type=="end" then
           -- extend
@@ -183,7 +184,8 @@ function ShipLine:update(dt)
   for i=2,#self.line.points do
     local dist = self.line.points[i]:vector():dist(mouse)
     local pointAtI = self:pointAtI(i)
-    if pointAtI then dist = dist - 10 end
+    -- TODO: if two lines overlap, prioritize earlier point
+    if pointAtI then dist = dist - 10 end -- Prioritize special points
     
     if dist < distMin then
       distMin = dist

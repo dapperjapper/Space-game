@@ -4,6 +4,7 @@ Class = require 'hump.class'
 Vector = require "hump.vector"
 Future = require "future"
 Sprite = require "sprite"
+SpriteList = require "spritelist"
 Point = require "point"
 PointList = require "pointlist"
 PointLine = require "pointline"
@@ -12,8 +13,8 @@ Nav = require "nav"
 ShipLine = require "shipline"
 Camera = require "hump.camera"
 
+inspect = require 'inspect'
 if DEBUG then
-  inspect = require 'inspect'
   ProFi = require 'ProFi'
   ProFi:start()
   require 'lovedebug'
@@ -27,7 +28,7 @@ function love.load()
   love.physics.setMeter(10)
   love.graphics.setMode(650, 650, false, true, 0)
   
-  sprites = {}
+  sprites = SpriteList()
   
   -- ship = Sprite()
   -- ship.type = "ship"
@@ -51,21 +52,21 @@ function love.load()
   ship.power = 1
   ship.mass = 1 -- TODO: what should this be??
   ship.size = 1 -- circle collision radius
-  table.insert( sprites, ship )
+  sprites:add(ship)
   shipID = 1 -- TODO: clunky (maybe spriteList class for handling this?)
   
   planet = Sprite(650/2, 650/2, 'planet')
   planet.radius = 10
   planet.mass = 1000
-  table.insert( sprites, planet )
+  sprites:add(planet)
   
   planet2 = Sprite(650/2, 650/2, 'planet')
-  planet2.radius = 10
+  planet2.radius = 5
   planet2.orbitRadius = 300
   planet2.r = math.pi
   planet2.mass = 500
   planet2:updatePos()
-  table.insert( sprites, planet2 )
+  sprites:add(planet2)
     
   cam = Camera(ship.x, ship.y)
   function cam:zoomPos(zoom, x, y)
@@ -83,9 +84,12 @@ function love.load()
   shipLine = ShipLine(sprites, cam)
   shipLine.granularity = granSlider.value
   function shipLine:updateSprites(newSprites)
-    for i,s in ipairs(newSprites) do -- indexes should be matching
-      sprites[i] = Class.include(newSprites[i], sprites[i]) -- destroys class structure, leaves table, oh well
-    end
+    newSprites = newSprites:clone() 
+    sprites = newSprites
+    self.sprites = newSprites
+    -- for i,s in ipairs(newSprites) do -- indexes should be matching
+    --   sprites[i] = Class.include(newSprites[i], sprites[i]) -- destroys class structure, leaves table, oh well
+    -- end
   end
   
   mode = 'plan'
@@ -120,7 +124,7 @@ function love.mousepressed(x, y, button)
   -- basic zoom and drag if shipLine isn't using mouse movements
   if button == "l" then
     love.mouse.startCam = Vector(cam:pos())
-    love.mouse.start = Vector(x, y)
+    love.mouse.start = Vector(x, y) -- TODO: don't store in mouse
   elseif button == 'wu' then
     cam:zoomPos(zoomPower, x, y)
   elseif button == 'wd' then
@@ -147,6 +151,8 @@ function love.update(dt)
     cam:lookAt( ( (love.mouse.start-Vector(love.mouse.getPosition()))/cam.scale+love.mouse.startCam ):unpack() )
   end
   
+  -- TOOD: mode mouse
+  
   shipLine:update(dt)
     
   gui.group.push{grow = "right", pos={10, 0}}
@@ -167,10 +173,11 @@ function love.draw()
   love.graphics.print("Current FPS: "..tostring(love.timer.getFPS( )), 10, 40)
   love.graphics.setLineWidth(1)
   
-  cam:attach()
-  for _,s in ipairs(sprites) do
+  cam:attach() -- TODO: sprites draw themselves
+  for _,s in ipairs(sprites.sprites) do
     if s.type == 'planet' then
-      love.graphics.circle('fill', s.x, s.y, s.radius, s.radius*cam.scale)
+      local tempradius = math.max(5, s.radius*cam.scale)/cam.scale
+      love.graphics.circle('fill', s.x, s.y, tempradius, tempradius*cam.scale)
     end
   end
   cam:detach()
@@ -179,10 +186,10 @@ function love.draw()
   gui.core.draw()
   
   love.graphics.setColor(255, 255, 255)
-  local shippos = Vector(cam:cameraCoords(sprites[shipID].x, sprites[shipID].y))
+  local shippos = Vector(cam:cameraCoords(sprites.sprites[shipID].x, sprites.sprites[shipID].y))
   love.graphics.push()
   love.graphics.translate(shippos.x, shippos.y)
-  love.graphics.rotate(sprites[shipID].r)
+  love.graphics.rotate(sprites.sprites[shipID].r)
   love.graphics.polygon('fill',0, 10, 5, -10, -5, -10)
   love.graphics.pop()
 end

@@ -5,6 +5,8 @@ local PointList = Class{
   end
 }
 
+-- TODO: combine with pointline?
+
 function PointList:add(point) -- keeps it sorted
   local i = self:pointBeforeOrOn(point.time)
   table.insert( self.points, i+1, point )
@@ -18,7 +20,7 @@ function PointList:remove(point)
   return point
 end
 
-function PointList:moveAllBack(t)
+function PointList:moveAllBack(t) -- TODO: Split nav points
   local pToRemove = {}
   for _,p in ipairs(self.points) do
     p.time = p.time-t

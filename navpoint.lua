@@ -4,8 +4,8 @@ local NavPoint = Class{
     self.y = y or 0
     self.time = 0
     self.type = "nav"
-    -- self.index = 0
     self.length = 0 -- length is in seconds
+    self.direction = 0
   end,
   __includes = {Point}
 }
@@ -15,6 +15,7 @@ function NavPoint:clone()
   point.time = self.time
   point.type = self.type
   point.length = self.length
+  point.direction = self.direction
   return point
 end
 

@@ -28,7 +28,7 @@ function PointLine:asLineList()
     table.insert( lineList, p.x )
     table.insert( lineList, p.y )
   end
-  if #lineList < 4 then -- If the line doesn't even cover to points than add an extra point
+  if #lineList < 4 then -- If the line doesn't even cover two points than add an extra point
     table.insert(lineList, lineList[1])
     table.insert(lineList, lineList[2])
   end
