@@ -1,3 +1,4 @@
+-- Continous array of Points intended to form a line (sorted) 
 local PointLine = Class{
   init = function(self)
     self.points = {}
@@ -15,10 +16,6 @@ function PointLine:inCameraCoords(cam)
     table.insert( pointLine.points, p:inCameraCoords(cam) )
   end
   return pointLine
-end
-
-function PointLine:first()
-  return self.points[1]
 end
 
 function PointLine:last()

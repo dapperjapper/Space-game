@@ -1,3 +1,5 @@
+DEBUG = false
+
 Class = require 'hump.class'
 Vector = require "hump.vector"
 Future = require "future"
@@ -9,16 +11,21 @@ NavPoint = require "navpoint"
 Nav = require "nav"
 ShipLine = require "shipline"
 Camera = require "hump.camera"
-inspect = require 'inspect'
 
-require 'lovedebug'
-_lovedebugpresskey = "tab"
+if DEBUG then
+  inspect = require 'inspect'
+  ProFi = require 'ProFi'
+  ProFi:start()
+  require 'lovedebug'
+  _lovedebugpresskey = "tab"
+end
 
 gui = require "quickie"
-granSlider = {value = 0.1882, min = 1, max = 0.01}
+granSlider = {value = 0.1, min = 1, max = 0.01}
 
 function love.load()
   love.physics.setMeter(10)
+  love.graphics.setMode(650, 650, false, true, 0)
   
   sprites = {}
   
@@ -40,8 +47,8 @@ function love.load()
   -- table.insert( sprites, planet )
   
   ship = Sprite(650/2-200, 650/2-200, 'ship')
-  ship.dy = -10 --20
-  ship.power = 0.5
+  ship.dy = 20
+  ship.power = 1
   ship.mass = 1 -- TODO: what should this be??
   ship.size = 1 -- circle collision radius
   table.insert( sprites, ship )
@@ -52,10 +59,12 @@ function love.load()
   planet.mass = 1000
   table.insert( sprites, planet )
   
-  planet2 = Sprite(650/2-300, 650/2, 'planet')
-  planet2.radius = 5
-  planet2.orbitRadius = 600
+  planet2 = Sprite(650/2, 650/2, 'planet')
+  planet2.radius = 10
+  planet2.orbitRadius = 300
+  planet2.r = math.pi
   planet2.mass = 500
+  planet2:updatePos()
   table.insert( sprites, planet2 )
     
   cam = Camera(ship.x, ship.y)
@@ -72,6 +81,7 @@ function love.load()
   end
   
   shipLine = ShipLine(sprites, cam)
+  shipLine.granularity = granSlider.value
   function shipLine:updateSprites(newSprites)
     for i,s in ipairs(newSprites) do -- indexes should be matching
       sprites[i] = Class.include(newSprites[i], sprites[i]) -- destroys class structure, leaves table, oh well
@@ -79,13 +89,17 @@ function love.load()
   end
   
   mode = 'plan'
-  
-  love.graphics.setMode(650, 650, false, true, 0)
-  
+    
   -- for n in pairs(_G) do print(n) end -- TODO: clean global variables
 end
 
 function love.keypressed(key, code)
+  if key=="p" and DEBUG then
+    ProFi:stop()
+    ProFi:writeReport( '/Users/jasper/Documents/Projects/Offline/planetary/love/profile.txt' )
+    ProFi:start()
+  end
+  
   gui.keyboard.pressed(key, code)
 end
 
@@ -107,7 +121,6 @@ function love.mousepressed(x, y, button)
   if button == "l" then
     love.mouse.startCam = Vector(cam:pos())
     love.mouse.start = Vector(x, y)
-    shipLine:deselect()
   elseif button == 'wu' then
     cam:zoomPos(zoomPower, x, y)
   elseif button == 'wd' then
@@ -118,9 +131,13 @@ end
 function love.mousereleased(x, y, button)
   if not mouseinzone() then return end
   
-   if button == "l" then
+   if button == "l" and love.mouse.start then
+     local moved = love.mouse.start-Vector(x, y)
+     if (moved.x == 0 and moved.y == 0) then -- didn't move at all
+       shipLine:deselect()
+     end
      love.mouse.start = nil
-     love.mouse.startCam = Vector(cam:pos())
+     love.mouse.startCam = nil
    end
 end
 
@@ -147,6 +164,7 @@ end
 
 function love.draw()
   love.graphics.setColor(255, 255, 255)
+  love.graphics.print("Current FPS: "..tostring(love.timer.getFPS( )), 10, 40)
   love.graphics.setLineWidth(1)
   
   cam:attach()

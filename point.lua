@@ -15,8 +15,13 @@ function Point:index(future)
   return future:indexAtTime(self.time)
 end
 
-printed = false
+function Point:clone()
+  local point = Point(self.x, self.y, self.type)
+  point.time = self.time
+  return point
+end
 
+--printed = false
 function Point:inCameraCoords(cam)
   -- if printed then return end
   -- print(inspect(self))
@@ -24,11 +29,11 @@ function Point:inCameraCoords(cam)
   -- print(nil)print(nil)print(nil)print(nil)print(nil)print(nil)print(nil)print(nil)print(nil)print(nil)print(nil)
   -- print(nil)print(nil)print(nil)print(nil)print(nil)print(nil)print(nil)print(nil)print(nil)print(nil)print(nil)
   local point = self:clone()
-  if self.type == 'nav' then
-    point.__includes={NavPoint} -- TODO: so clunky
-  else
-    point.__includes={Point}
-  end
+  -- if self.type == 'nav' then
+  --   point.__includes={NavPoint} -- TODO: so clunky
+  -- else
+  --   point.__includes={Point}
+  -- end
   -- print(inspect(point))
   -- print(nil)print(nil)print(nil)print(nil)print(nil)print(nil)print(nil)print(nil)print(nil)print(nil)print(nil)
   -- print(nil)print(nil)print(nil)print(nil)print(nil)print(nil)print(nil)print(nil)print(nil)print(nil)print(nil)

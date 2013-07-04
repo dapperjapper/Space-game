@@ -2,7 +2,7 @@ local ShipLine = Class{
   init = function(self, sprites, cam)
     self.sprites = sprites
     self.nav = Nav()
-    self.granularity = 0.1882
+    self.granularity = 0.1
     self.cam = cam
     self.future = nil
     self.points = nil -- interface points, like crash notifiers and end of sim
@@ -15,10 +15,10 @@ local ShipLine = Class{
   end
 }
 
-function ShipLine:recalculate(startChangedT)
+function ShipLine:recalculate(startChangedT) -- TODO: optimize for nav changes only recalculate after the nav
   local lastNav = self.nav:last()
   if lastNav then lastNav=lastNav:endTime() else lastNav=0 end
-  local endTime = math.max(20, lastNav)
+  local endTime = math.max(10, lastNav)
   
   if self.future then self.future:destroy(); self.future=nil end
   self.future = Future(self.sprites, self.nav)
@@ -58,6 +58,7 @@ function ShipLine:mousepressed(x, y, button)
   local navLengthPower = 0.05 --sec
   local interacted = false
   
+  if love.keyboard.isDown(' ') then return false end
   if button == "l" then
     if self.hotPoint then
       if mode == "plan" then
@@ -79,7 +80,6 @@ function ShipLine:mousepressed(x, y, button)
           self.activePoint = self.hotPoint
         end
       elseif mode == "ff" then
-        print ('fast forward to ', self.hotPoint.time)
         self:deselect()
         self:fastForward(self.hotPoint.time)
       end
@@ -114,12 +114,17 @@ function ShipLine:mousepressed(x, y, button)
 end
 
 function ShipLine:fastForward(t)
-  --self:recalculate()
-  local transitionLength = 2 -- sec
+  self:updateSprites(self.future:at(t))
+  self.nav:moveAllBack(t)
+  self.points:moveAllBack(t)
+  self:recalculate()
   
-  self.goForwardIncrements = t/transitionLength
-  self.goForward = t
-  self.goneForward = 0
+  --self:recalculate()
+  -- local transitionLength = 2 -- sec
+  -- 
+  -- self.goForwardIncrements = t/transitionLength
+  -- self.goForward = t
+  -- self.goneForward = 0
 end
 
 function ShipLine:mousereleased(x, y, button)
@@ -139,55 +144,37 @@ function ShipLine:pointAtI(index)
   end
 end
 
-function radiusRectangle(w, h, r)
-  -- http://stackoverflow.com/a/3197924
-  local vx = math.cos(r)
-  local vy = math.sin(r)
-
-  local x1 = -h/2
-  local y1 = -w/2
-  local x2 = h/2
-  local y2 = w/2
-  
-  local times = {}
-  if vx ~= 0 then
-    times[1] = x1/vx
-    times[2] = x2/vx
-  end
-  if vy ~= 0 then
-    times[3] = y1/vy
-    times[4] = y2/vy
-  end
-  
-  local minT = w+h -- larger than all
-  for _,v in ipairs(times) do
-    if v<minT and v>0 then minT = v end
-  end
-  
-  return minT
-end
-
 function ShipLine:update(dt)
-  if self.goForward > 0 then
-    self:updateSprites(self.future:atInterpolate(self.goneForward)) -- run by main, but updates self.sprites too because they are linked
-    if self.line:first().time < self.goneForward then -- remove parts of line we've gone over
-      table.remove(self.line.points, 1)
-    end
-    local navPoint = self.nav:pointAtI(self.future:indexAtTime(self.goneForward), self.future)
-    if navPoint then
-      self.nav:remove(navPoint)
-    end
-    local point = self.points:pointAtI(self.future:indexAtTime(self.goneForward), self.future)
-    if point then
-      self.points:remove(point)
-    end
-    
-    self.goForward = self.goForward - (dt*self.goForwardIncrements)
-    self.goneForward = self.goneForward + (dt*self.goForwardIncrements)
-    if (self.goForward <= 0) then
-      self:recalculate()
-    end
-  end
+  -- if self.goForward > 0 then
+  --   -- updateSprites run through callback by main, but updates self.sprites too because they are linked *magic*
+  --   self:updateSprites(self.future:atInterpolate(self.goneForward))
+  --   
+  --   if self.goneForward > 0 then
+  --     repeat -- remove parts of line we've gone over
+  --       table.remove(self.line.points, 1)
+  --     until self.line.points[1].time > self.goneForward
+  --   
+  --     if self.nav.points[1] then
+  --       repeat -- remove navpoints we've gone over
+  --         table.remove(self.nav.points, 1)
+  --       until self.nav.points[1].time > self.goneForward
+  --     end
+  --   
+  --     if self.points.points[1] then
+  --       repeat -- remove points we've gone over
+  --         table.remove(self.points.points, 1)
+  --       until self.points.points[1].time > self.goneForward
+  --     end
+  --   end
+  --       
+  --   self.goForward = self.goForward - (dt*self.goForwardIncrements)
+  --   self.goneForward = self.goneForward + (dt*self.goForwardIncrements)
+  --   if self.goForward <= 0 then
+  --     self.goForward = 0
+  --     self.goneForward = 0
+  --     self:recalculate()
+  --   end
+  -- end
   
   -- look for closest point on line
   local mouse = Vector(self.cam:mousepos())
@@ -232,10 +219,17 @@ function ShipLine:draw()
     local pcam = p:inCameraCoords(self.cam)
     if p.type == "end" then
       love.graphics.setColor(255, 255, 255)
+      love.graphics.push()
+      love.graphics.translate(pcam.x, pcam.y)
+      love.graphics.rotate(self.future:shipAt(p.time).r)
+
+      love.graphics.rectangle('fill', -2, -5, 4, 5)
+      love.graphics.polygon('fill', -6, 0, 6, 0, 0, 8)
+      love.graphics.pop()
     elseif p.type == "collision" then
       love.graphics.setColor(255, 0, 0)
+      love.graphics.circle('fill', pcam.x, pcam.y, 4)
     end
-    love.graphics.circle('fill', pcam.x, pcam.y, 4)
   end
   
   -- Draw unselected navs in bold white

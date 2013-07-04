@@ -10,6 +10,14 @@ local NavPoint = Class{
   __includes = {Point}
 }
 
+function NavPoint:clone()
+  local point = NavPoint(self.x, self.y)
+  point.time = self.time
+  point.type = self.type
+  point.length = self.length
+  return point
+end
+
 function NavPoint:updatePosition(future)
   local ship = future:shipAt(self.time)
   self.x = ship.x

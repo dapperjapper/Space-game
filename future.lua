@@ -8,9 +8,9 @@ local Future = Class{
     
     self.nav = nav
     
-    self.world = love.physics.newWorld(0, 0, false)
+    self.world = love.physics.newWorld(0, 0, true)
     
-    local function beginContact(a, b, coll)
+    local function beginContact(a, b)
       if a:getUserData().type == 'ship' then
         local ship = a
       elseif b:getUserData().type == 'ship' then
@@ -20,7 +20,8 @@ local Future = Class{
         self.collisionCourse = true
       end
     end
-    self.world:setCallbacks(beginContact)
+    -- http://love2d.org/forums/viewtopic.php?f=4&t=9643
+    self.world:setCallbacks(beginContact, function() collectgarbage() end)
     
     self.objects = {}
     for i,s in ipairs(self.sprites) do
@@ -67,6 +68,14 @@ function Future:simulateTo(t)
     for _,p in ipairs(self.objects) do
       if p.type == "planet" then
         local planet = p.body
+        local planetSpr = self.sprites[p.spritesI]
+        
+        local orbitRadius = planetSpr.orbitRadius
+        local orbitSpeed = planetSpr.orbitSpeed
+        local r = planetSpr.r+(orbitSpeed/(2*math.pi)*self.granularity)
+        planetSpr.r = r
+        planet:setPosition( (math.cos(r)*orbitRadius)+planetSpr.orbitX, (math.sin(r)*orbitRadius)+planetSpr.orbitY )
+        
         local planetVec = Vector(planet:getPosition())
         local distance = planetVec - shipVec
         
@@ -80,15 +89,15 @@ function Future:simulateTo(t)
         -- local force = (G*M*m) / (R^2)
         -- local normforce = force*distance
         -- ship:applyForce(normforce:unpack())
-        local force = self.sprites[p.spritesI].mass / distance:len2()
+        local force = planetSpr.mass / distance:len2()
         local normforce = force*distance
         ship:applyForce(normforce:unpack())
       end
     end
     
     if self.nav:at(self.sprites.time) then
-      local vel = Vector(ship:getLinearVelocity())
-      ship:applyForce((vel*self.sprites[self.shipSprI].power):unpack())
+      local dir = Vector(ship:getLinearVelocity()):normalize_inplace()
+      ship:applyForce( (dir*self.sprites[self.shipSprI].power):unpack() )
     end
     
     self.world:update(self.granularity)
@@ -102,7 +111,9 @@ function Future:simulateTo(t)
       sprite.dx, sprite.dy = fxt.body:getLinearVelocity()
       
       --sprite.r = fxt.body:getAngle()
-      if (fxt.type == 'ship') then sprite.r = -math.atan2(ship:getLinearVelocity()) end
+      if fxt.type == 'ship' then
+        sprite.r = -math.atan2(ship:getLinearVelocity())
+      end -- sprite.r for planet modified in above loop
     end
     
     table.insert(sim, Class.clone(self.sprites))

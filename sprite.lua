@@ -8,24 +8,28 @@ local Sprite = Class{
     self.type = type
     self.x = x
     self.y = y
+    self.dx = 0 -- TODO: no class defaults?
+    self.dy = 0
+    self.mass = 1
+    self.r = 0 -- for planet 0 = to the right
+    
     if self.type == 'planet' then
       self.orbitX = x
       self.orbitY = y
       self.orbitRadius = 0
+      self.orbitSpeed = 0.1 -- rev/s positive for clockwise
       self.radius = 0
+      self:updatePos()
     end
-    self.dx = 0 -- TODO: no class defaults?
-    self.dy = 0
-    self.mass = 1
-    self.r = 0
+    
     -- self.id = nextID
     -- nextID = nextID+1
   end
 }
 
-function Sprite:isSprite()
-  print("yeah!")
-  return true
+function Sprite:updatePos()
+  self.x = (math.cos(self.r)*self.orbitRadius)+self.orbitX
+  self.y = (math.sin(self.r)*self.orbitRadius)+self.orbitY
 end
 
 return Sprite

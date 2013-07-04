@@ -79,6 +79,34 @@ local function Label(state, text, align, x,y,w,h)
 	love.graphics.print(text, x,y)
 end
 
+local function radiusRectangle(w, h, r)
+  -- http://stackoverflow.com/a/3197924
+  local vx = math.cos(r)
+  local vy = math.sin(r)
+
+  local x1 = -h/2
+  local y1 = -w/2
+  local x2 = h/2
+  local y2 = w/2
+  
+  local times = {}
+  if vx ~= 0 then
+    times[1] = x1/vx
+    times[2] = x2/vx
+  end
+  if vy ~= 0 then
+    times[3] = y1/vy
+    times[4] = y2/vy
+  end
+  
+  local minT = w+h -- larger than all
+  for _,v in ipairs(times) do
+    if v<minT and v>0 then minT = v end
+  end
+  
+  return minT
+end
+
 local function Tooltip(state, text, x, y)
 	local f = assert(love.graphics.getFont())
 	
