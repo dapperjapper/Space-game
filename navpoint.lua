@@ -33,4 +33,18 @@ function NavPoint:shipLine(future)
   return future:shipLine(self.time, self:endTime())
 end
 
+function NavPoint:draw(cam, future)
+  local pcam = self:inCameraCoords(cam)
+  love.graphics.circle('fill', pcam.x, pcam.y, 4)    
+  love.graphics.line(unpack( self:shipLine(future):inCameraCoords(cam):asLineList() ))
+  
+  love.graphics.push()
+  love.graphics.translate(pcam.x, pcam.y)
+  love.graphics.rotate(self.direction)
+  love.graphics.translate(0, 10)
+  love.graphics.rectangle('fill', -2, -5, 4, 5)
+  love.graphics.polygon('fill', -6, 0, 6, 0, 0, 8)
+  love.graphics.pop()
+end
+
 return NavPoint

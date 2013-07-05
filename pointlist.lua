@@ -5,8 +5,6 @@ local PointList = Class{
   end
 }
 
--- TODO: combine with pointline?
-
 function PointList:add(point) -- keeps it sorted
   local i = self:pointBeforeOrOn(point.time)
   table.insert( self.points, i+1, point )
@@ -20,7 +18,7 @@ function PointList:remove(point)
   return point
 end
 
-function PointList:moveAllBack(t) -- TODO: Split nav points
+function PointList:moveAllBack(t, future) 
   local pToRemove = {}
   for _,p in ipairs(self.points) do
     p.time = p.time-t
@@ -30,6 +28,13 @@ function PointList:moveAllBack(t) -- TODO: Split nav points
   end
   for _,p in ipairs(pToRemove) do
     self:remove(p)
+    if p.type=='nav' and p:endTime() > 0 then
+      local navPoint = p:clone()
+      navPoint.time = 0  -- TODO: not totally consistent???
+      navPoint.length = p:endTime()
+      navPoint:updatePosition(future)
+      self:add(navPoint)
+    end
   end
 end
 
@@ -53,7 +58,7 @@ function PointList:pointBeforeOrOn(t)
   return binarySearch(self.points,t)
 end
 
-function PointList:pointAtI(index, future) -- TODO: index is clunky
+function PointList:pointAtI(index, future)
   for _,p in ipairs(self.points) do
     if p:index(future) == index then return p end
   end
@@ -72,5 +77,29 @@ function PointList:inCameraCoords(cam)
   end
   return pointList
 end
+
+function PointList:drawPoints(cam, future)
+  for _,p in ipairs(self.points) do
+    p:draw(cam, future)
+  end
+end
+
+function PointList:last()
+  return self.points[#self.points]
+end
+
+function PointList:asLineList()
+  local lineList = {}
+  for _,p in ipairs(self.points) do
+    table.insert( lineList, p.x )
+    table.insert( lineList, p.y )
+  end
+  if #lineList < 4 then -- If the line doesn't even cover two points than add an extra point
+    table.insert(lineList, lineList[1])
+    table.insert(lineList, lineList[2])
+  end
+  return lineList
+end
+
 
 return PointList

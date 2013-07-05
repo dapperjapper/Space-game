@@ -1,4 +1,3 @@
--- local nextID = 1
 local SpriteList = Class{
   init = function(self)
     self.time = 0
@@ -12,6 +11,7 @@ function SpriteList:add(sprite)
   if sprite.type == 'ship' then
     self.shipId = #self.sprites
   end
+  sprite.id = #self.sprites
   return sprite
 end
 
@@ -30,6 +30,30 @@ function SpriteList:clone()
   
   spriteList.time = self.time
   return spriteList
+end
+
+function SpriteList:draw(cam)
+  for _,s in ipairs(self.sprites) do
+    s:draw(cam)
+  end
+end
+
+function SpriteList:drawGhosts(cam)
+  for _,s in ipairs(self.sprites) do
+    s:drawGhost(cam)
+  end
+end
+
+function SpriteList:makeBox2D(world)
+  for _,s in ipairs(self.sprites) do      
+    s:makeBox2D(world)   
+  end
+end
+
+function SpriteList:updateFromBox2D()
+  for _,s in ipairs(self.sprites) do
+    s:updateFromBox2D()
+  end
 end
 
 return SpriteList

@@ -11,7 +11,7 @@ function Nav:at(t)
     
   local maxPoint = nil
   for _,p in ipairs(self.points) do
-    if p.time < t then
+    if p.time <= t then
       if not maxPoint or p.time > maxPoint.time then
         maxPoint = p
       end

@@ -7,52 +7,21 @@ local Future = Class{
     table.insert(self.sim, self.sprites:clone())
     
     self.nav = nav
-    
     self.world = love.physics.newWorld(0, 0, true)
     
     local function beginContact(a, b)
-      if a:getUserData().type == 'ship' then
-        local ship = a
-      elseif b:getUserData().type == 'ship' then
-        local ship = b
+      local isShip = false
+      if a:getUserData().sprite.type == 'ship' then
+        isShip = true
+      elseif b:getUserData().sprite.type == 'ship' then
+        isShip = true
       end
-      if ship then
-        self.collisionCourse = true
-      end
+      self.collisionCourse = isShip
     end
     -- http://love2d.org/forums/viewtopic.php?f=4&t=9643
     self.world:setCallbacks(beginContact, function() collectgarbage() end)
     
-    self.objects = {}
-    for i,s in ipairs(self.sprites.sprites) do
-      local object = {}
-      
-      if s.type == "ship" then
-        object.body = love.physics.newBody(self.world, s.x, s.y, "dynamic")
-        object.shape = love.physics.newCircleShape(s.size)
-      elseif s.type == "planet" then
-        object.body = love.physics.newBody(self.world, s.x, s.y, "kinematic")
-        object.shape = love.physics.newCircleShape(s.radius)
-      end
-      
-      object.fixture = love.physics.newFixture(object.body, object.shape, 1)
-      object.fixture:setUserData({spritesI = i, type = s.type})
-      
-      object.spritesI = i
-      object.type = s.type
-      
-      object.body:setMass(s.mass)
-      object.body:setLinearVelocity(s.dx, s.dy)
-      -- object.body:setAngle(s.r)
-      object.body:setFixedRotation(true)
-      
-      table.insert(self.objects, object)
-      
-      if s.type == "ship" then
-        self.shipFixtI = #self.objects
-        self.shipSprI = i
-      end
-    end
+    self.sprites:makeBox2D(self.world)
   end,
   sim = {},
   granularity = 0.01
@@ -60,53 +29,44 @@ local Future = Class{
 
 function Future:simulateTo(t)
   local sim = self.sim
-  local ship = self.objects[self.shipFixtI].body
+  local shipBody = self.sprites:ship().box2D.body
 
   while sim[#sim].time < t and not self.collisionCourse do
-
-    local shipVec = Vector(ship:getPosition())
-    for _,p in ipairs(self.objects) do
-      if p.type == "planet" then
-        local planet = p.body
-        local planetSpr = self.sprites.sprites[p.spritesI]
+    
+    local shipVec = Vector(shipBody:getPosition())
+    for _,s in ipairs(self.sprites.sprites) do
+      if s.type == "planet" then
+        local planetBody = s.box2D.body
+        local planetSpr = s
         
-        local orbitRadius = planetSpr.orbitRadius
-        local orbitSpeed = planetSpr.orbitSpeed
-        local r = planetSpr.r+(orbitSpeed/(2*math.pi)*self.granularity)
-        planetSpr.r = r
-        planet:setPosition( (math.cos(r)*orbitRadius)+planetSpr.orbitX, (math.sin(r)*orbitRadius)+planetSpr.orbitY )
+        -- rotate planets
+        planetSpr.r = planetSpr.r+(planetSpr.orbitSpeed/(2*math.pi)*self.granularity)
+        planetSpr:updatePos()
+        planetBody:setPosition( planetSpr.x, planetSpr.y )
         
-        local planetVec = Vector(planet:getPosition())
-        local distance = planetVec - shipVec
-        
+        -- apply radial gravity to ship
+        local planetVec = Vector(planetBody:getPosition())
+        local distance = planetVec - shipVec        
         -- F = GMm/R^2
         -- local G = 6.674*(10^-11) -- m3 kg-1 s-2
         local force = planetSpr.mass / distance:len2()
         local normforce = force*distance
-        ship:applyForce(normforce:unpack())
+        shipBody:applyForce(normforce:unpack())
       end
     end
     
-    if self.nav:at(self.sprites.time) then
-      local dir = Vector(ship:getLinearVelocity()):normalize_inplace()
-      ship:applyForce( (dir*self.sprites.sprites[self.shipSprI].power):unpack() )
+    local navPoint = self.nav:at(self.sprites.time)
+    if navPoint then
+      local dir = Vector( math.cos(navPoint.direction), math.sin(navPoint.direction) )
+      shipBody:applyForce( (dir*self.sprites:ship().power):unpack() )
     end
     
     self.world:update(self.granularity)
-
-    -- ship:setAngle(-math.atan2(ship:getLinearVelocity()))
-    
     self.sprites.time = self.sprites.time + self.granularity
-    for _,fxt in ipairs(self.objects) do
-      local sprite = self.sprites.sprites[fxt.spritesI]
-      sprite.x, sprite.y = fxt.body:getPosition()      
-      sprite.dx, sprite.dy = fxt.body:getLinearVelocity()
-      
-      --sprite.r = fxt.body:getAngle()
-      if fxt.type == 'ship' then
-        sprite.r = -math.atan2(ship:getLinearVelocity())
-      end -- sprite.r for planet modified in above loop
-    end
+    
+    -- copy box2d to sprites
+    self.sprites:updateFromBox2D()
+    
     table.insert(sim, self.sprites:clone())
   end
 end
@@ -130,6 +90,10 @@ function Future:indexAtTime(t)
   return binarySearch(self.sim, t)
 end
 
+function Future:timeAtIndex(i)
+  return i*self.granularity
+end  
+
 -- Clone if you intend to change these values
 function Future:at(t)
   self:simulateTo(t)
@@ -139,18 +103,18 @@ function Future:at(t)
 end
 
 function Future:atI(i)
-  self:simulateTo(i*self.granularity) -- TODO: clunky
+  self:simulateTo(self:timeAtIndex(i))
   
   if self.collisionCourse and i>#self.sim then return self.sim[#self.sim] end
   return self.sim[i]
 end
 
 function Future:shipAt(t)
-  return self:at(t).sprites[self.shipSprI]
+  return self:at(t):ship()
 end
 
-function Future:shipAtI(i) -- TODO: dealing with index is clunky
-  return self:atI(i).sprites[self.shipSprI]
+function Future:shipAtI(i)
+  return self:atI(i):ship()
 end
 
 function Future:shipLine(fromT, toT)
@@ -158,7 +122,7 @@ function Future:shipLine(fromT, toT)
   
   local fromIndex = self:indexAtTime(fromT)
   local toIndex = self:indexAtTime(toT)
-  local line = PointLine()
+  local line = PointList()
   
   for i=fromIndex,toIndex do
     local ship = self:shipAtI(i)

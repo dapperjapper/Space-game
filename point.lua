@@ -28,4 +28,21 @@ function Point:inCameraCoords(cam)
   return point
 end
 
+function Point:draw(cam, future)
+  local pcam = self:inCameraCoords(cam)
+  if self.type == "end" then
+    love.graphics.setColor(255, 255, 255)
+    love.graphics.push()
+    love.graphics.translate(pcam.x, pcam.y)
+    love.graphics.rotate(future:shipAt(self.time).r)
+
+    love.graphics.rectangle('fill', -2, -5, 4, 5)
+    love.graphics.polygon('fill', -6, 0, 6, 0, 0, 8)
+    love.graphics.pop()
+  elseif self.type == "collision" then
+    love.graphics.setColor(255, 0, 0)
+    love.graphics.circle('fill', pcam.x, pcam.y, 4)
+  end
+end
+
 return Point
