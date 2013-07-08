@@ -36,8 +36,8 @@ function Point:draw(cam, future)
     love.graphics.translate(pcam.x, pcam.y)
     love.graphics.rotate(future:shipAt(self.time).r)
 
-    love.graphics.rectangle('fill', -2, -5, 4, 5)
-    love.graphics.polygon('fill', -6, 0, 6, 0, 0, 8)
+    love.graphics.rectangle('fill', -5, -2, 5, 4)
+    love.graphics.polygon('fill', 0, -6, 0, 6, 8, 0)
     love.graphics.pop()
   elseif self.type == "collision" then
     love.graphics.setColor(255, 0, 0)

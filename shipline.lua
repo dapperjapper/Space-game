@@ -19,7 +19,7 @@ local ShipLine = Class{
 function ShipLine:recalculate(startChangedT) -- TODO: optimize for nav changes only recalculate after the nav
   local lastNav = self.nav:last()
   if lastNav then lastNav=lastNav:endTime() else lastNav=0 end
-  local endTime = math.max(10, lastNav)
+  local endTime = math.max(5, lastNav)
   
   if self.future then self.future:destroy(); self.future=nil end
   self.future = Future(self.sprites, self.nav)
@@ -57,9 +57,7 @@ end
 
 function ShipLine:mousepressed(x, y, button)
   local navLengthPower = 0.05 --sec
-  --local interacted = false
-  
-  -- if love.keyboard.isDown(' ') then print('ops'); return false end
+
   if button == "l" then
     if self.game.clickMode == 'addNav' then
       -- add nav
@@ -101,8 +99,6 @@ function ShipLine:mousepressed(x, y, button)
       interacted = true
     end
   end
-  
-  return interacted
 end
 
 function ShipLine:fastForward(t)
@@ -207,7 +203,7 @@ function ShipLine:update(dt)
   if self.game.toolMode == 'navDir' then
     self.clickMode = 'navDir'
     local mouse = Vector(self.cam:mousepos())
-    local r = -math.atan2( (mouse-self.activePoint:vector()):unpack() )
+    local r = -math.atan2( (mouse-self.activePoint:vector()):unpack() )+(math.pi/2)
     self.activePoint.direction = r
   end
   
@@ -231,7 +227,7 @@ function ShipLine:update(dt)
   
 end
 
-function ShipLine:draw()
+function ShipLine:draw()  
   -- Draw ship line
   love.graphics.setLineWidth(1)
   love.graphics.setColor(255, 255, 255)
@@ -251,14 +247,12 @@ function ShipLine:draw()
     self.activePoint:draw(self.cam, self.future)
   end
   
-  -- Draw hovering circle on "hotPoint" and ghosts from the future oooooOOOOoo
+  -- Draw hovering circle on "hotPoint"
   love.graphics.setLineWidth(1)
   love.graphics.setColor(255, 255, 255)
   if self.hotPoint then
     local pcam = self.hotPoint:inCameraCoords(self.cam)
     love.graphics.circle('line', pcam.x, pcam.y, 6)
-    
-    self.future:at(self.hotPoint.time):drawGhosts(self.cam)
   end  
 end
 

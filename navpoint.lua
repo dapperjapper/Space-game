@@ -41,9 +41,9 @@ function NavPoint:draw(cam, future)
   love.graphics.push()
   love.graphics.translate(pcam.x, pcam.y)
   love.graphics.rotate(self.direction)
-  love.graphics.translate(0, 10)
-  love.graphics.rectangle('fill', -2, -5, 4, 5)
-  love.graphics.polygon('fill', -6, 0, 6, 0, 0, 8)
+  love.graphics.translate(10, 0)
+  love.graphics.line(-10, 0, 0, 0)
+  love.graphics.polygon('fill', 0, -6, 0, 6, 8, 0)
   love.graphics.pop()
 end
 

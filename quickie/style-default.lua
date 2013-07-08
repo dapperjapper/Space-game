@@ -84,10 +84,10 @@ local function radiusRectangle(w, h, r)
   local vx = math.cos(r)
   local vy = math.sin(r)
 
-  local x1 = -h/2
-  local y1 = -w/2
-  local x2 = h/2
-  local y2 = w/2
+  local x1 = -w/2
+  local y1 = -h/2
+  local x2 = w/2
+  local y2 = h/2
   
   local times = {}
   if vx ~= 0 then
@@ -116,7 +116,7 @@ local function Tooltip(state, text, x, y)
 	local middle = Vector(x - w/2, y - h/2)
 	local direction = Vector(love.mouse.getPosition()) - point
 	direction:normalize_inplace()
-	local angle = -math.atan2(direction:unpack())
+	local angle = -math.atan2(direction:unpack())+(math.pi/2)
 	local distance = radiusRectangle(w, h, angle) * 1.1 + 10
 	direction = direction * distance
 	local pos = middle - direction

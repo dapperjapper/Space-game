@@ -40,8 +40,7 @@ function Future:simulateTo(t)
         local planetSpr = s
         
         -- rotate planets
-        planetSpr.r = planetSpr.r+(planetSpr.orbitSpeed/(2*math.pi)*self.granularity)
-        planetSpr:updatePos()
+        planetSpr:updatePosition(self.granularity)
         planetBody:setPosition( planetSpr.x, planetSpr.y )
         
         -- apply radial gravity to ship

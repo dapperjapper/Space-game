@@ -38,6 +38,12 @@ function SpriteList:draw(cam)
   end
 end
 
+function SpriteList:update(dt)
+  for _,s in ipairs(self.sprites) do
+    s:update(dt)
+  end
+end
+
 function SpriteList:drawGhosts(cam)
   for _,s in ipairs(self.sprites) do
     s:drawGhost(cam)

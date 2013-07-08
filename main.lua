@@ -4,6 +4,8 @@ Class = require 'hump.class'
 Vector = require "hump.vector"
 Future = require "future"
 Sprite = require "sprite"
+Ship = require "ship"
+Planet = require "planet"
 SpriteList = require "spritelist"
 Point = require "point"
 PointList = require "pointlist"
@@ -24,12 +26,15 @@ gui = require "quickie"
 game = {}
 game.granSlider = {value = 0.1, min = 1, max = 0.01}
 
+-- http://lua-users.org/wiki/MathLibraryTutorial
+math.randomseed( tonumber(tostring(os.time()):reverse():sub(1,6))/1000000 )
+
 function love.load()
   love.physics.setMeter(10)
   
   game.cursors = {}
   for _,f in ipairs(love.filesystem.enumerate('cursors/')) do
-    local name = string.match(f, '(.+)\.gif$')
+    local name = string.match(f, '(.+).gif$')
     if name then game.cursors[name] = love.graphics.newImage( 'cursors/' .. f ) end
   end
   love.mouse.setVisible(false)
@@ -53,26 +58,23 @@ function love.load()
   -- planet.mass = 5.97219*(10^15) -- teragrams
   -- table.insert( game.sprites, planet )
   
-  local ship = Sprite(650/2-200, 650/2-200, 'ship')
-  ship.dy = 20
+   -- for angles: in radians and 0 = to the right
+  
+  local ship = Ship(650/2-200, 650/2-200, 'ship')
+  ship.dx = 20
   ship.power = 1
   ship.mass = 1
-  ship.size = 1 -- circle collision radius
+  ship.radius = 1 -- circle collision radius
   game.sprites:add(ship)
   
-  local planet = Sprite(650/2, 650/2, 'planet')
-  planet.radius = 10
-  planet.mass = 1000
+  local planet = Planet({ sun={650/2, 650/2}, radius=20, mass=1000, appearance={type='sun'} })
   game.sprites:add(planet)
   
-  local planet2 = Sprite(650/2, 650/2, 'planet')
-  planet2.radius = 5
-  planet2.orbitRadius = 300
-  planet2.r = math.pi
-  planet2.mass = 500
-  planet2:updatePos()
-  game.sprites:add(planet2)
-    
+  for i=5,30,2 do
+    local planet2 = Planet({ sun=planet, radius=i, orbitRadius=math.random(200,400), r=math.pi*2/25*i, mass=500, orbitSpeed=0.1 })
+    game.sprites:add(planet2)
+  end
+      
   game.cam = Camera(ship.x, ship.y)
   function game.cam:zoomPos(zoom, x, y)
     -- http://stackoverflow.com/a/13317413
@@ -103,7 +105,6 @@ function love.keypressed(key, code)
   if key=="p" and DEBUG then
     ProFi:stop()
     ProFi:writeReport( '/Users/jasper/Documents/Projects/Offline/planetary/love/profile.txt' )
-    ProFi:start()
   end
   
   if key == ' ' then
@@ -145,27 +146,33 @@ function love.mousepressed(x, y, button)
   end
 end
 
-function love.mousereleased(x, y, button)  
-  local moved = game.mouseStart-Vector(x, y)
+function love.mousereleased(x, y, button)
+    if game.mouseStart then
+    local moved = game.mouseStart-Vector(x, y)
+    
+    if button == "l" then
+        if game.clickMode == 'pan' and game.mouseStart then
+          if (moved.x == 0 and moved.y == 0) then -- didn't move at all, we have a click on our hands
+            game.shipLine:deselect()
+          end
+        end
   
-  if button == "l" and game.clickMode == 'pan' and game.mouseStart then
-    if (moved.x == 0 and moved.y == 0) then -- didn't move at all, we have a click on our hands
-      game.shipLine:deselect()
+        if not game.mouseinzone() then return end
+  
+        if game.clickMode == 'navDir' then
+          if (moved.x == 0 and moved.y == 0) then
+            -- if clicked to create - navDir aligns to ship direction at that point
+            game.shipLine.activePoint.direction = game.shipLine.future:shipAt(game.shipLine.activePoint.time).r
+          end
+          game.toolMode = 'plan'
+        end
     end
   end
-  
-  if not game.mouseinzone() then return end
-  
-  if game.clickMode == 'navDir' then
-    if (moved.x == 0 and moved.y == 0) then
-      -- if clicked to create - navDir aligns to ship direction at that point
-      game.shipLine.activePoint.direction = game.shipLine.future:shipAt(game.shipLine.activePoint.time).r
-    end
-    game.toolMode = 'plan'
+    
+  if button == "l" then
+    game.mouseStart = nil
+    game.mouseStartCam = nil
   end
-  
-  game.mouseStart = nil
-  game.mouseStartCam = nil
 end
 
 function love.update(dt)
@@ -175,6 +182,7 @@ function love.update(dt)
   end
   
   game.shipLine:update(dt)
+  --game.sprites:update(dt)
   game.clickMode = game.shipLine.clickMode or 'pan'
   game.scrollMode = game.shipLine.scrollMode or 'zoom'
   
@@ -212,6 +220,10 @@ function love.draw()
     love.graphics.print("ScrollMode: "..tostring(game.scrollMode), 10, 70)
   end
   
+  -- draw ghosts from the future oooooOOOOoo
+  if game.shipLine.hotPoint then
+    game.shipLine.future:at(game.shipLine.hotPoint.time):drawGhosts(game.cam)
+  end
   game.sprites:draw(game.cam)
   game.shipLine:draw()  
   gui.core.draw()
