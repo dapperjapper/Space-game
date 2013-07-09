@@ -1,5 +1,6 @@
 DEBUG = true
 
+require "graphics"
 Class = require 'hump.class'
 Vector = require "hump.vector"
 Future = require "future"
@@ -25,11 +26,13 @@ end
 gui = require "quickie"
 game = {}
 game.granSlider = {value = 0.1, min = 1, max = 0.01}
+game.qualitySlider = {value = 10, min = 1, max = 10}
 
 -- http://lua-users.org/wiki/MathLibraryTutorial
 math.randomseed( tonumber(tostring(os.time()):reverse():sub(1,6))/1000000 )
 
 function love.load()
+  love.graphics.setCaption("Planetary")
   love.physics.setMeter(10)
   
   game.cursors = {}
@@ -38,6 +41,9 @@ function love.load()
     if name then game.cursors[name] = love.graphics.newImage( 'cursors/' .. f ) end
   end
   love.mouse.setVisible(false)
+  
+  -- http://designfestival.com/the-cicada-principle-and-why-it-matters-to-web-designers/
+  game.starfield = {starfieldCanvas(500, {number = 10}), starfieldCanvas(700, {number = 10})}
   
   game.sprites = SpriteList()
   
@@ -61,17 +67,17 @@ function love.load()
    -- for angles: in radians and 0 = to the right
   
   local ship = Ship(650/2-200, 650/2-200, 'ship')
-  ship.dx = 20
+  ship.dx = 200
   ship.power = 1
   ship.mass = 1
   ship.radius = 1 -- circle collision radius
   game.sprites:add(ship)
   
-  local planet = Planet({ sun={650/2, 650/2}, radius=20, mass=1000, appearance={type='sun'} })
+  local planet = Planet({ sun={650/2, 650/2}, radius=50, mass=500, appearance={type='sun'} })
   game.sprites:add(planet)
   
   for i=5,30,2 do
-    local planet2 = Planet({ sun=planet, radius=i, orbitRadius=math.random(200,400), r=math.pi*2/25*i, mass=500, orbitSpeed=0.1 })
+    local planet2 = Planet({ sun=planet, radius=i, orbitRadius=math.random(200,1000), r=math.pi*2/25*i, mass=500, orbitSpeed=0.1 })
     game.sprites:add(planet2)
   end
       
@@ -199,7 +205,7 @@ function love.update(dt)
   end
   
   gui.group.push{grow = "right", pos={10, 0}}
-  gui.Label{text = 'Mode'}
+  gui.Label{text = 'Mode', size={50,30}}
   if gui.Checkbox{text = "Plan", checked=(game.toolMode=="plan")} then
     game.toolMode="plan"
   end
@@ -207,18 +213,36 @@ function love.update(dt)
     game.toolMode="ff"
   end
   gui.Label{text = "Granularity", pos={20, 0}}
-  if gui.Slider{info = game.granSlider} then game.shipLine.granularity = game.granSlider.value; game.shipLine:recalculate() end
+  if gui.Slider{info = game.granSlider, size={100,30}} then game.shipLine.granularity = game.granSlider.value; game.shipLine:recalculate() end
   gui.group.pop{}
 end
 
 function love.draw()
   if DEBUG then
     love.graphics.setColor(255, 255, 255)
-    love.graphics.print("Current FPS: "..tostring(love.timer.getFPS( )), 10, 40)
+    love.graphics.print("Current FPS: "..tostring(love.timer.getFPS()), 10, 40)
     love.graphics.print("ToolMode: "..tostring(game.toolMode), 10, 50)
     love.graphics.print("ClickMode: "..tostring(game.clickMode), 10, 60)
     love.graphics.print("ScrollMode: "..tostring(game.scrollMode), 10, 70)
   end
+  
+  -- draw starfield
+  love.graphics.setBlendMode('premultiplied')
+    for i,starfield in ipairs(game.starfield) do
+      local diam = starfield:getWidth()
+      local x = game.cam.x*(0.25/i)%diam-diam
+      while x < love.graphics.getWidth() do
+        local y = game.cam.y*(0.25/i)%diam-diam
+        while y < love.graphics.getHeight() do
+          if x+diam>0 and y+diam>0 then
+            love.graphics.draw(starfield, x,y)
+          end
+          y = y+diam
+        end
+        x = x+diam
+      end
+    end
+  love.graphics.setBlendMode('alpha')
   
   -- draw ghosts from the future oooooOOOOoo
   if game.shipLine.hotPoint then

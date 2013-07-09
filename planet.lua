@@ -33,7 +33,6 @@ function Planet:clone()
   return planet
 end
 
-require "planetgraphics"
 local shadow = shadowGradient(50, 200, 2, {0, 0, 0})
 local softShadow = shadowGradient(50, 30, 1.5, {0, 0, 0})
 
@@ -71,7 +70,7 @@ function Planet:generateImages()
     end
   elseif a.type == 'sun' then
     a.rings = false
-    self.tex = sunTexture(self.radius*2, {visualDiam=self.radius*2})
+    self.tex = sunTexture(self.radius*4, {rays=75, rayVariance=0.3})
     self.texR = 0
   end
 end
@@ -90,38 +89,40 @@ function Planet:draw(cam) -- Clean up cray cray
   love.graphics.push()
   love.graphics.setColor(255,255,255)
   love.graphics.translate(pos.x, pos.y)
-  
+    
   if self.appearance.rings then
     self:drawRings(tempradius, dir, true)
   end
   
-  love.graphics.setStencil(function()
-     love.graphics.circle('fill', 0, 0, tempradius, tempradius+1)
-  end)
-    -- Texture
-    love.graphics.push()
-      love.graphics.rotate(self.texR)
-      love.graphics.draw(self.tex, -tempradius,-tempradius,0, tempradius*2/self.tex:getWidth(), tempradius*2/self.tex:getHeight())
-    love.graphics.pop()
+  if self.appearance.type ~= 'sun' then
+    love.graphics.setStencil(function()
+       love.graphics.circle('fill', 0, 0, tempradius, tempradius+1)
+    end)
+      -- Texture
+      love.graphics.push()
+        love.graphics.rotate(self.texR)
+        love.graphics.draw(self.tex, -tempradius,-tempradius,0, tempradius*2/self.tex:getWidth(), tempradius*2/self.tex:getHeight())
+      love.graphics.pop()
     
-    --Shadows
-    local offsetImage = Vector(-tempradius*2, -tempradius*2)
-    -- (tempradius*pos:dist(sun))/(pos:dist(sun)+300) is a formula that has a asymptote at tempradius
-    -- and falls off at a rate of 300
-    local offsetDir = dir*(tempradius*pos:dist(sun))/(pos:dist(sun)+300)
-    local offset = offsetDir+offsetImage
-    if self.appearance.type ~= 'sun' then
+      --Shadows
+      local offsetImage = Vector(-tempradius*2, -tempradius*2)
+      -- (tempradius*pos:dist(sun))/(pos:dist(sun)+300) is a formula that has a asymptote at tempradius
+      -- and falls off at a rate of 300
+      local offsetDir = dir*(tempradius*pos:dist(sun))/(pos:dist(sun)+300)
+      local offset = offsetDir+offsetImage
       love.graphics.draw(shadow, offset.x,offset.y,0, tempradius*4/shadow:getWidth(), tempradius*4/shadow:getHeight())
-    end
-    local offsetDirSoft = offsetDir*1.75
-    local offsetSoft = offsetDirSoft+offsetImage
-    love.graphics.draw(softShadow, offsetSoft.x,offsetSoft.y,0, tempradius*4/softShadow:getWidth(), tempradius*4/softShadow:getHeight())
-  love.graphics.setStencil()
+      local offsetDirSoft = offsetDir*1.75
+      local offsetSoft = offsetDirSoft+offsetImage
+      love.graphics.draw(softShadow, offsetSoft.x,offsetSoft.y,0, tempradius*4/softShadow:getWidth(), tempradius*4/softShadow:getHeight())
+    love.graphics.setStencil()
+  else
+    love.graphics.draw(self.tex, -tempradius*2,-tempradius*2,0, tempradius*4/self.tex:getWidth(), tempradius*4/self.tex:getHeight())
+  end
     
   if self.appearance.rings then
     self:drawRings(tempradius, dir, false)
   end
-    
+  
   love.graphics.pop()
 end
 

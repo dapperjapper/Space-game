@@ -131,42 +131,76 @@ function gasGiantTexture(diam, props)
   return love.graphics.newImage(imageData)
 end
 
-local perlin2D = require 'noise'
+-- local perlin2D = require 'noise'
+-- function sunTexture(diam, props)
+--   local imageData = love.image.newImageData(diam, diam)
+--   local perlin = perlin2D(os.time(), diam, diam, 0.55, 1, 75)
+--   local color = props.color
+--   local center = Vector(diam/2, diam/2)
+--   
+--   imageData:mapPixel(function ( x, y, r, g, b, a )
+--     -- local c = perlin[x+1][y+1]+127
+--     local c = math.random(127-50,127+50)
+--     c = blendColorOverlay({c,c,c,100}, color)
+--     
+--     -- local gradient = Class.clone({0,0,0})
+--     -- gradient[4] = Vector(x, y):dist(center)-15--*(255/5)
+--     -- print(gradient[4])
+--     -- c = blendColorOverlay(gradient, c)
+--     
+--     r,g,b = c[1],c[2],c[3]
+--     r,g,b = math.min(r,255),math.min(g,255),math.min(b,255)
+--     return r,g,b,255
+--   end)
+--     
+--   return love.graphics.newImage(imageData)
+-- end
+
+local sunRayGradient = love.image.newImageData('sunray.png')
 function sunTexture(diam, props)
-  local imageData = love.image.newImageData( props.visualDiam,props.visualDiam )
-  local perlin = perlin2D(os.time(), props.visualDiam, props.visualDiam, 0.55, 5, 127)
+  local imageData = love.image.newImageData(diam, diam)
+  local color = props.color
+  local center = Vector(diam/2, diam/2)
+  local rays = props.rays
+  local rayVariance = props.rayVariance
+  local rayLength = {}
+  for i=1,rays do
+    rayLength[i]=math.random(diam/2-((diam/2)*rayVariance), diam/2)
+  end
   
   imageData:mapPixel(function ( x, y, r, g, b, a )
-    local c = perlin[x+1][y+1]+127
-    c = blendColorOverlay({c,c,c,100}, {255, 121, 18, 255})
+    local pos = Vector(x,y)
+    local angle = -math.atan2( (center-pos):unpack() )+(math.pi/2)
+    angle = angle%(math.pi*2)
+    local length = rayLength[math.floor(angle/(math.pi*2)*rays)+1]
+    local distance = pos:dist(center)
     
-    r,g,b = c[1],c[2],c[3]
-    r,g,b = math.min(r,255),math.min(g,255),math.min(b,255)
-    return r,g,b,255
+    r,g,b,a = sunRayGradient:getPixel(0,math.min(sunRayGradient:getHeight()-1, distance/length*sunRayGradient:getHeight()))
+    return r,g,b,a
   end)
     
   return love.graphics.newImage(imageData)
 end
 
-function sunGradient(diam, contrast, inset, color)
-  -- Limit gradient size at 50
-  diam = math.min(diam, 50)
-  local imageData = love.image.newImageData( diam, diam )
-  local center = Vector(diam/2, diam/2)
-
-  imageData:mapPixel( function ( x, y, r, g, b, a )
-    r,g,b = color[1],color[2],color[3]
-    a = Vector(x, y):dist(center)*inset/diam*255
-    
-    -- apply contrast
-    local factor = (259 * (contrast + 255)) / (255 * (259 - contrast))
-    a = math.max(math.min(factor * (a - 128) + 128, 255), 0)
-        
-    return r,g,b,a
-  end )
-  
-  return love.graphics.newImage(imageData)
-end
+-- function sunGlare(diam, contrast, inset, color)
+--   -- Limit gradient size at 50
+--   diam = math.min(diam, 50)
+--   local imageData = love.image.newImageData( diam, diam )
+--   local center = Vector(diam/2, diam/2)
+-- 
+--   imageData:mapPixel( function ( x, y, r, g, b, a )
+--     r,g,b = color[1],color[2],color[3]
+--     a = 255-(Vector(x, y):dist(center)*inset/diam*255)
+--     
+--     -- apply contrast
+--     local factor = (259 * (contrast + 255)) / (255 * (259 - contrast))
+--     a = math.max(math.min(factor * (a - 128) + 128, 255), 0)
+--         
+--     return r,g,b,a
+--   end )
+--   
+--   return love.graphics.newImage(imageData)
+-- end
 
 -- http://www.love2d.org/wiki/HSL_color
 -- Converts HSL to RGB. (input and output range: 0 - 255)
@@ -203,6 +237,34 @@ function ringsCanvas(diam, props)
     end
   end)
   
+  return canvas
+end
+
+function starfieldCanvas(diam, props)
+  local canvas = love.graphics.newCanvas(diam, diam)
+  
+  canvas:renderTo(function()
+    -- props.number is #stars/100px^2
+    for i=1,props.number*diam/100 do
+      local radius = math.random(0.5,2)
+      local x, y = math.random(0,diam), math.random(0,diam)
+      local color = math.random(0,150)
+      love.graphics.setColor(color,color,color)
+      love.graphics.circle('fill', x, y, radius, radius+2)
+      
+      -- Make it tile by drawing the 8 adjacent tiles
+      love.graphics.circle('fill', x+diam, y-diam, radius, radius+2)
+      love.graphics.circle('fill', x+diam, y, radius, radius+2)
+      love.graphics.circle('fill', x+diam, y+diam, radius, radius+2)
+      love.graphics.circle('fill', x, y+diam, radius, radius+2)
+      love.graphics.circle('fill', x-diam, y+diam, radius, radius+2)
+      love.graphics.circle('fill', x-diam, y, radius, radius+2)
+      love.graphics.circle('fill', x-diam, y-diam, radius, radius+2)
+      love.graphics.circle('fill', x, y-diam, radius, radius+2)
+    end
+  end)
+  
+  canvas:setWrap('repeat', 'repeat')
   return canvas
 end
 

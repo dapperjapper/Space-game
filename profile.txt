@@ -60,11 +60,11 @@
 | hump/class.lua                                    : Point                                   :   73                : 0.248       : 1.12%       :    4216     |
 | [C]                                               : line                                    :   -1                : 0.247       : 1.11%       :    6469     |
 | [C]                                               : floor                                   :   -1                : 0.246       : 1.11%       :   21369     |
-| planetgraphics.lua                                : gasGiantTexture                         :   54                : 0.231       : 1.04%       :      27     |
+| graphics.lua                                : gasGiantTexture                         :   54                : 0.231       : 1.04%       :      27     |
 | [C]                                               : insert                                  :   -1                : 0.221       : 0.99%       :   19042     |
 | pointlist.lua                                     : asLineList                              :   91                : 0.218       : 0.99%       :     251     |
 | [C]                                               : mapPixel                                :   -1                : 0.206       : 0.93%       :      27     |
-| planetgraphics.lua                                : anonymous                               :   64                : 0.195       : 0.88%       :     930     |
+| graphics.lua                                : anonymous                               :   64                : 0.195       : 0.88%       :     930     |
 | [C]                                               : getPosition                             :   -1                : 0.185       : 0.83%       :   15843     |
 | planet.lua                                        : anonymous                               :   95                : 0.183       : 0.82%       :    3159     |
 | [C]                                               : pop                                     :   -1                : 0.177       : 0.80%       :   13004     |
@@ -82,7 +82,7 @@
 | [C]                                               : rotate                                  :   -1                : 0.124       : 0.56%       :    9494     |
 | quickie/style-default.lua                         : f                                       :  190                : 0.123       : 0.55%       :     234     |
 | [C]                                               : setPosition                             :   -1                : 0.099       : 0.45%       :    7452     |
-| planetgraphics.lua                                : ringsCanvas                             :  106                : 0.097       : 0.44%       :      13     |
+| graphics.lua                                : ringsCanvas                             :  106                : 0.097       : 0.44%       :      13     |
 | [C]                                               : sqrt                                    :   -1                : 0.096       : 0.43%       :    8606     |
 | spritelist.lua                                    : makeBox2D                               :   53                : 0.094       : 0.43%       :      16     |
 | hump/vector.lua                                   : len2                                    :  100                : 0.094       : 0.42%       :    7452     |
@@ -100,7 +100,7 @@
 | [C]                                               : setLineWidth                            :   -1                : 0.072       : 0.32%       :    6448     |
 | [C]                                               : newStencil                              :   -1                : 0.069       : 0.31%       :    6084     |
 | [C]                                               : renderTo                                :   -1                : 0.069       : 0.31%       :      13     |
-| planetgraphics.lua                                : anonymous                               :  111                : 0.068       : 0.31%       :      13     |
+| graphics.lua                                : anonymous                               :  111                : 0.068       : 0.31%       :      13     |
 | quickie/slider.lua                                : Slider                                  :   34                : 0.064       : 0.29%       :     117     |
 | [C]                                               : print                                   :   -1                : 0.059       : 0.27%       :     935     |
 | [C]                                               : max                                     :   -1                : 0.057       : 0.26%       :    5047     |
@@ -128,7 +128,7 @@
 | [C]                                               : rectangle                               :   -1                : 0.020       : 0.09%       :     696     |
 | hump/class.lua                                    : Ship                                    :   73                : 0.019       : 0.08%       :     309     |
 | hump/class.lua                                    : SpriteList                              :   73                : 0.019       : 0.08%       :     309     |
-| planetgraphics.lua                                : blendColor                              :   21                : 0.018       : 0.08%       :    1004     |
+| graphics.lua                                : blendColor                              :   21                : 0.018       : 0.08%       :    1004     |
 | quickie/init.lua                                  : anonymous                               :    0                : 0.017       : 0.08%       :       1     |
 | quickie/keyboard.lua                              : hasFocus                                :   45                : 0.015       : 0.07%       :    1287     |
 | [C]                                               : getFont                                 :   -1                : 0.015       : 0.07%       :    1172     |
@@ -141,7 +141,7 @@
 | navpoint.lua                                      : clone                                   :   13                : 0.012       : 0.05%       :     135     |
 | hump/class.lua                                    : include_helper                          :   27                : 0.012       : 0.05%       :     423     |
 | quickie/group.lua                                 : advance                                 :   78                : 0.012       : 0.05%       :     702     |
-| planetgraphics.lua                                : interpolate                             :   72                : 0.011       : 0.05%       :     930     |
+| graphics.lua                                : interpolate                             :   72                : 0.011       : 0.05%       :     930     |
 | quickie/style-default.lua                         : anonymous                               :    0                : 0.011       : 0.05%       :       1     |
 | quickie/mouse.lua                                 : isHot                                   :   42                : 0.011       : 0.05%       :     949     |
 | [string "graphics.lua"]                           : newFont                                 : 1247                : 0.011       : 0.05%       :       1     |
@@ -190,7 +190,7 @@
 | quickie/group.lua                                 : beginFrame                              :  124                : 0.002       : 0.01%       :     117     |
 | [C]                                               : getColor                                :   -1                : 0.002       : 0.01%       :     117     |
 | quickie/mouse.lua                                 : isActive                                :   43                : 0.002       : 0.01%       :     117     |
-| planetgraphics.lua                                : HSL                                     :   91                : 0.002       : 0.01%       :      27     |
+| graphics.lua                                : HSL                                     :   91                : 0.002       : 0.01%       :      27     |
 | [C]                                               : getDelta                                :   -1                : 0.001       : 0.01%       :     117     |
 | [C]                                               : getLineWidth                            :   -1                : 0.001       : 0.01%       :     117     |
 | [C]                                               : getLineStyle                            :   -1                : 0.001       : 0.01%       :     117     |
