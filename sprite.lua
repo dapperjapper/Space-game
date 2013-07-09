@@ -23,24 +23,24 @@ function Sprite:clone()
   return sprite
 end
 
-function Sprite:draw(cam)
-  return
-end
-
-function Sprite:update(dt)
-  return
-end
-
-function Sprite:drawGhost(cam)
-  return
-end
-
-function Sprite:makeBox2D(world)
-  return
-end
-
-function Sprite:updateFromBox2D()
-  return
-end
+-- function Sprite:draw(cam)
+--   return
+-- end
+-- 
+-- function Sprite:update(dt)
+--   return
+-- end
+-- 
+-- function Sprite:drawGhost(cam)
+--   return
+-- end
+-- 
+-- function Sprite:makeBox2D(world)
+--   return
+-- end
+-- 
+-- function Sprite:updateFromBox2D()
+--   return
+-- end
 
 return Sprite

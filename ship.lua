@@ -27,6 +27,17 @@ function Ship:clone()
   return sprite
 end
 
+-- function Ship:simpleClone()
+--   --local ship = {x=self.x, y=self.y, dx=self.dx, dy=self.dy, r=self.r}
+--   return self:clone()
+-- end
+
+Ship.simpleClone = Ship.clone
+
+function Ship:withSimple(simple)
+  return simple:clone()
+end
+
 function Ship:draw(cam)
   love.graphics.setColor(255, 255, 255)
   local pos = Vector(cam:cameraCoords(self.x, self.y))
@@ -35,10 +46,6 @@ function Ship:draw(cam)
   love.graphics.rotate(self.r)
   love.graphics.polygon('fill',10, 0, -10, 5, -10, -5)
   love.graphics.pop()
-end
-
-function Ship:drawGhost(cam)
-  return
 end
 
 function Ship:makeBox2D(world)

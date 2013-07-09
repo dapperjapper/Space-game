@@ -33,12 +33,23 @@ function Planet:clone()
   return planet
 end
 
+function Planet:simpleClone()
+  local planet = {x=self.x, y=self.y}
+  return planet
+end
+
+function Planet:withSimple(simple)
+  self.x = simple.x
+  self.y = simple.y
+  return self
+end
+
 local shadow = shadowGradient(50, 200, 2, {0, 0, 0})
 local softShadow = shadowGradient(50, 30, 1.5, {0, 0, 0})
 
 function Planet:generateImages()
   print('making images for planet #', self.id, 'size', self.radius)
-  a = self.appearance
+  local a = self.appearance
   
   if not a.type then a.type = 'gasgiant' end
   
@@ -70,14 +81,24 @@ function Planet:generateImages()
     end
   elseif a.type == 'sun' then
     a.rings = false
-    self.tex = sunTexture(self.radius*4, {rays=75, rayVariance=0.3})
-    self.texR = 0
+    a.texNum = 3
+    self.tex = {}
+    for i=1,a.texNum do
+      self.tex[i] = sunTexture(self.radius*4, {rays=75, rayVariance=0.4})
+    end
+    self.texAnim = 0
   end
 end
 
 function Planet:update(dt)
-  -- Rotate planet visually
-  -- self.texR = self.texR+math.pi/50*dt
+  local a = self.appearance
+  
+  if a.type == 'sun' then
+    self.texAnim = (self.texAnim + (dt/4))%a.texNum
+  else
+    -- Rotate planet visually
+    -- self.texR = self.texR+math.pi/50*dt
+  end
 end
 
 function Planet:draw(cam) -- Clean up cray cray
@@ -89,12 +110,15 @@ function Planet:draw(cam) -- Clean up cray cray
   love.graphics.push()
   love.graphics.setColor(255,255,255)
   love.graphics.translate(pos.x, pos.y)
-    
-  if self.appearance.rings then
-    self:drawRings(tempradius, dir, true)
-  end
   
+  -- love.graphics.circle('fill', 0, 0, tempradius, tempradius+1)
+  -- love.graphics.pop()
+    
   if self.appearance.type ~= 'sun' then
+    if self.appearance.rings then
+      self:drawRings(tempradius, dir, true)
+    end
+    
     love.graphics.setStencil(function()
        love.graphics.circle('fill', 0, 0, tempradius, tempradius+1)
     end)
@@ -115,14 +139,25 @@ function Planet:draw(cam) -- Clean up cray cray
       local offsetSoft = offsetDirSoft+offsetImage
       love.graphics.draw(softShadow, offsetSoft.x,offsetSoft.y,0, tempradius*4/softShadow:getWidth(), tempradius*4/softShadow:getHeight())
     love.graphics.setStencil()
+    
+    if self.appearance.rings then
+      self:drawRings(tempradius, dir, false)
+    end
   else
-    love.graphics.draw(self.tex, -tempradius*2,-tempradius*2,0, tempradius*4/self.tex:getWidth(), tempradius*4/self.tex:getHeight())
+    local a = self.appearance
+    
+    local tex1Id = math.floor(self.texAnim)%a.texNum+1
+    local tex1 = self.tex[tex1Id]
+    love.graphics.setColor(255,255,255,math.min(255, 255-(self.texAnim%1*255)+50))
+    love.graphics.draw(tex1, -tempradius*2,-tempradius*2,0, tempradius*4/tex1:getWidth(), tempradius*4/tex1:getHeight())
+    
+    local tex2Id = tex1Id+1
+    if tex2Id > a.texNum then tex2Id=1 end
+    local tex2 = self.tex[tex2Id]
+    love.graphics.setColor(255,255,255,self.texAnim%1*255)
+    love.graphics.draw(tex2, -tempradius*2,-tempradius*2,0, tempradius*4/tex2:getWidth(), tempradius*4/tex2:getHeight())
   end
     
-  if self.appearance.rings then
-    self:drawRings(tempradius, dir, false)
-  end
-  
   love.graphics.pop()
 end
 
@@ -156,10 +191,10 @@ function Planet:drawRings(tempradius, dir, upsideDown)
   love.graphics.setBlendMode('alpha')
 end
 
-function Planet:drawGhost(cam)
+function Planet:drawGhost(cam, simpleClone)
   if self.orbitRadius ~= 0 then
     love.graphics.setColor(255, 255, 255, 50)
-    local pos = Vector(cam:cameraCoords(self.x, self.y))
+    local pos = Vector(cam:cameraCoords(simpleClone.x, simpleClone.y))
     love.graphics.push()
     love.graphics.translate(pos.x, pos.y)
     local tempradius = math.max(5, self.radius*cam.scale)

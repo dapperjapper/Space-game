@@ -52,7 +52,7 @@ function blendColor(src, dst)
 end
 
 function blendColorOverlay(src, dst)
-  -- http://en.wikipedia.org/wiki/Alpha_compositing#Alpha_blending
+  -- http://en.wikipedia.org/wiki/Blend_modes#Overlay
   -- sooooo ugly
   src[1] = src[1]/255
   src[2] = src[2]/255
@@ -113,18 +113,15 @@ function gasGiantTexture(diam, props)
     
     -- Blend in stripes
     local visualY = math.floor(y/pixelRatio)
-    local visualYCeil = math.ceil(y/pixelRatio)
-    local function interpolate(t, startV, endV, duration)
-      return (endV-startV)*t/duration + startV;
-    end
+    -- local visualYCeil = math.ceil(y/pixelRatio)
+    -- local function interpolate(t, startV, endV, duration)
+    --   return (endV-startV)*t/duration + startV;
+    -- end
     -- interpolate between stripe values
-    local stripe = interpolate(y-(visualY*pixelRatio), stripes[visualY], stripes[visualYCeil], pixelRatio)
-    r,g,b = unpack( blendColor({stripe, stripe, stripe, stripesA}, {r,g,b,255}) )
-    -- r = ((stripe*stripesA)+(r*(255-stripesA)))/(stripesA+(255-stripesA))
-    -- g = ((stripe*stripesA)+(g*(255-stripesA)))/(stripesA+(255-stripesA))
-    -- b = ((stripe*stripesA)+(b*(255-stripesA)))/(stripesA+(255-stripesA))
-        
-    r,g,b = math.min(r,255),math.min(g,255),math.min(b,255)
+    -- local stripe = interpolate(y-(visualY*pixelRatio), stripes[visualY], stripes[visualYCeil], pixelRatio)
+    local stripe = stripes[visualY]
+    
+    r,g,b = unpack( blendColor({stripe, stripe, stripe, stripesA}, {r,g,b,255}) )        
     return r,g,b,a
   end)
     
@@ -181,26 +178,6 @@ function sunTexture(diam, props)
     
   return love.graphics.newImage(imageData)
 end
-
--- function sunGlare(diam, contrast, inset, color)
---   -- Limit gradient size at 50
---   diam = math.min(diam, 50)
---   local imageData = love.image.newImageData( diam, diam )
---   local center = Vector(diam/2, diam/2)
--- 
---   imageData:mapPixel( function ( x, y, r, g, b, a )
---     r,g,b = color[1],color[2],color[3]
---     a = 255-(Vector(x, y):dist(center)*inset/diam*255)
---     
---     -- apply contrast
---     local factor = (259 * (contrast + 255)) / (255 * (259 - contrast))
---     a = math.max(math.min(factor * (a - 128) + 128, 255), 0)
---         
---     return r,g,b,a
---   end )
---   
---   return love.graphics.newImage(imageData)
--- end
 
 -- http://www.love2d.org/wiki/HSL_color
 -- Converts HSL to RGB. (input and output range: 0 - 255)

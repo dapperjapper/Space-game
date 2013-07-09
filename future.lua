@@ -4,11 +4,12 @@ local Future = Class{
     
     self.sprites = sprites:clone()
     self.sprites.time = 0
-    table.insert(self.sim, self.sprites:clone())
+    table.insert(self.sim, self.sprites:simpleClone())
     
     self.nav = nav
     self.world = love.physics.newWorld(0, 0, true)
     
+    self.collisionCourse = false
     local function beginContact(a, b)
       local isShip = false
       if a:getUserData().sprite.type == 'ship' then
@@ -22,17 +23,14 @@ local Future = Class{
     self.world:setCallbacks(beginContact, function() collectgarbage() end)
     
     self.sprites:makeBox2D(self.world)
-  end,
-  sim = {},
-  granularity = 0.01
+  end
 }
 
 function Future:simulateTo(t)
   local sim = self.sim
   local shipBody = self.sprites:ship().box2D.body
 
-  while sim[#sim].time < t and not self.collisionCourse do
-    
+  while sim[#sim].time < t and not self.collisionCourse do    
     local shipVec = Vector(shipBody:getPosition())
     for _,s in ipairs(self.sprites.sprites) do
       if s.type == "planet" then
@@ -66,7 +64,7 @@ function Future:simulateTo(t)
     -- copy box2d to sprites
     self.sprites:updateFromBox2D()
     
-    table.insert(sim, self.sprites:clone())
+    table.insert(sim, self.sprites:simpleClone())
   end
 end
 
@@ -97,15 +95,15 @@ end
 function Future:at(t)
   self:simulateTo(t)
   
-  if self.collisionCourse and t>self.sim[#self.sim].time then return self.sim[#self.sim] end
-  return self.sim[self:indexAtTime(t)]
+  if self.collisionCourse and t>self.sim[#self.sim].time then return self.sim[#self.sim] else
+  return self.sim[self:indexAtTime(t)] end
 end
 
 function Future:atI(i)
   self:simulateTo(self:timeAtIndex(i))
   
-  if self.collisionCourse and i>#self.sim then return self.sim[#self.sim] end
-  return self.sim[i]
+  if self.collisionCourse and i>#self.sim then return self.sim[#self.sim] else
+  return self.sim[i] end
 end
 
 function Future:shipAt(t)
@@ -124,7 +122,15 @@ function Future:shipLine(fromT, toT)
   local line = PointList()
   
   for i=fromIndex,toIndex do
-    local ship = self:shipAtI(i)
+    -- local ship = self:shipAtI(i)
+    local ship, sprites
+    if self.collisionCourse and i>#self.sim then
+      sprites = self.sim[#self.sim]
+    else
+      sprites = self.sim[i]
+    end
+    ship = sprites.sprites[sprites.shipId]
+    
     local point = Point(ship.x, ship.y, "shipPath")
     point.time = self:atI(i).time
     -- point.index = i
@@ -160,6 +166,8 @@ end
 function Future:destroy()
   self.world:destroy()
   self.nav = nil
+  self.sim = nil
+  self.sprites = nil
 end
 
 return Future

@@ -32,6 +32,25 @@ function SpriteList:clone()
   return spriteList
 end
 
+-- The simple clones are tables that contain only the core properties of the sprite that change over time
+-- This reduces the storage costs for the Future class
+function SpriteList:simpleClone()
+  local spriteList = SpriteList()
+  
+  for _,s in ipairs(self.sprites) do
+    spriteList:add(s:simpleClone())
+  end
+  
+  spriteList.time = self.time
+  return spriteList
+end
+
+function SpriteList:importSimple(simple)
+  for i,s in ipairs(self.sprites) do
+    self.sprites[i] = s:withSimple(simple.sprites[i])
+  end
+end
+
 function SpriteList:draw(cam)
   for _,s in ipairs(self.sprites) do
     s:draw(cam)
@@ -40,13 +59,15 @@ end
 
 function SpriteList:update(dt)
   for _,s in ipairs(self.sprites) do
-    s:update(dt)
+    if s.update then s:update(dt) end
   end
 end
 
-function SpriteList:drawGhosts(cam)
+function SpriteList:drawGhosts(cam, simpleClones)
   for _,s in ipairs(self.sprites) do
-    s:drawGhost(cam)
+    if s.drawGhost then
+      s:drawGhost(cam, simpleClones.sprites[s.id])
+    end
   end
 end
 

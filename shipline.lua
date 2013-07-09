@@ -19,7 +19,7 @@ local ShipLine = Class{
 function ShipLine:recalculate(startChangedT) -- TODO: optimize for nav changes only recalculate after the nav
   local lastNav = self.nav:last()
   if lastNav then lastNav=lastNav:endTime() else lastNav=0 end
-  local endTime = math.max(5, lastNav)
+  local endTime = math.max(5, lastNav+5)
   
   if self.future then self.future:destroy(); self.future=nil end
   self.future = Future(self.sprites, self.nav)

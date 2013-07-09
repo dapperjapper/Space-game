@@ -17,8 +17,7 @@ Camera = require "hump.camera"
 
 inspect = require 'inspect'
 if DEBUG then
-  -- ProFi = require 'ProFi'
-  -- ProFi:start()
+  ProFi = require 'ProFi'
   -- require 'lovedebug'
   -- _lovedebugpresskey = "tab"
 end
@@ -65,14 +64,7 @@ function love.load()
   -- table.insert( game.sprites, planet )
   
    -- for angles: in radians and 0 = to the right
-  
-  local ship = Ship(650/2-200, 650/2-200, 'ship')
-  ship.dx = 200
-  ship.power = 1
-  ship.mass = 1
-  ship.radius = 1 -- circle collision radius
-  game.sprites:add(ship)
-  
+    
   local planet = Planet({ sun={650/2, 650/2}, radius=50, mass=500, appearance={type='sun'} })
   game.sprites:add(planet)
   
@@ -80,6 +72,13 @@ function love.load()
     local planet2 = Planet({ sun=planet, radius=i, orbitRadius=math.random(200,1000), r=math.pi*2/25*i, mass=500, orbitSpeed=0.1 })
     game.sprites:add(planet2)
   end
+  
+  local ship = Ship(650/2-200, 650/2-200, 'ship')
+  ship.dx = 200
+  ship.power = 1
+  ship.mass = 1
+  ship.radius = 1 -- circle collision radius
+  game.sprites:add(ship)
       
   game.cam = Camera(ship.x, ship.y)
   function game.cam:zoomPos(zoom, x, y)
@@ -97,9 +96,7 @@ function love.load()
   game.shipLine = ShipLine(game)
   game.shipLine.granularity = game.granSlider.value
   function game.shipLine:updateSprites(newSprites)
-    newSprites = newSprites:clone() 
-    game.sprites = newSprites
-    self.sprites = newSprites
+    game.sprites:importSimple(newSprites)
   end
   
   game.toolMode = 'plan'
@@ -108,6 +105,9 @@ function love.load()
 end
 
 function love.keypressed(key, code)
+  if key=="o" and DEBUG then
+    ProFi:start()
+  end
   if key=="p" and DEBUG then
     ProFi:stop()
     ProFi:writeReport( '/Users/jasper/Documents/Projects/Offline/planetary/love/profile.txt' )
@@ -188,7 +188,7 @@ function love.update(dt)
   end
   
   game.shipLine:update(dt)
-  --game.sprites:update(dt)
+  game.sprites:update(dt)
   game.clickMode = game.shipLine.clickMode or 'pan'
   game.scrollMode = game.shipLine.scrollMode or 'zoom'
   
@@ -224,6 +224,7 @@ function love.draw()
     love.graphics.print("ToolMode: "..tostring(game.toolMode), 10, 50)
     love.graphics.print("ClickMode: "..tostring(game.clickMode), 10, 60)
     love.graphics.print("ScrollMode: "..tostring(game.scrollMode), 10, 70)
+    love.graphics.print("Memory: "..tostring(math.floor(collectgarbage("count")/1000)), 10, 80)
   end
   
   -- draw starfield
@@ -246,7 +247,7 @@ function love.draw()
   
   -- draw ghosts from the future oooooOOOOoo
   if game.shipLine.hotPoint then
-    game.shipLine.future:at(game.shipLine.hotPoint.time):drawGhosts(game.cam)
+    game.sprites:drawGhosts(game.cam, game.shipLine.future:at(game.shipLine.hotPoint.time))
   end
   game.sprites:draw(game.cam)
   game.shipLine:draw()  
