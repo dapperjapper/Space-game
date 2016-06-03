@@ -22,10 +22,10 @@ if DEBUG then
   -- _lovedebugpresskey = "tab"
 end
 
-gui = require "quickie"
+gui = require "suit"
 game = {}
 game.granSlider = {value = 0.1, min = 1, max = 0.01}
-game.qualitySlider = {value = 10, min = 1, max = 10}
+-- game.qualitySlider = {value = 10, min = 1, max = 10}
 
 -- http://lua-users.org/wiki/MathLibraryTutorial
 math.randomseed( tonumber(tostring(os.time()):reverse():sub(1,6))/1000000 )
@@ -36,7 +36,7 @@ function love.load()
 
   game.cursors = {}
   for _,f in ipairs(love.filesystem.getDirectoryItems('cursors/')) do
-    local name = string.match(f, '(.+).gif$')
+    local name = string.match(f, '(.+).png$')
     if name then game.cursors[name] = love.graphics.newImage( 'cursors/' .. f ) end
   end
   love.mouse.setVisible(false)
@@ -183,7 +183,7 @@ end
 
 function love.update(dt)
   -- drag
-  if love.mouse.isDown('l') and game.clickMode == 'pan' and game.mouseStart then
+  if love.mouse.isDown(1) and game.clickMode == 'pan' and game.mouseStart then
     game.cam:lookAt( ( (game.mouseStart-Vector(love.mouse.getPosition()))/game.cam.scale+game.mouseStartCam ):unpack() )
   end
 
@@ -204,17 +204,21 @@ function love.update(dt)
     game.cursor = 'normal'
   end
 
-  gui.group.push{grow = "right", pos={10, 0}}
-  gui.Label{text = 'Mode', size={50,30}}
-  if gui.Checkbox{text = "Plan", checked=(game.toolMode=="plan")} then
+  gui.layout:reset(10,0)
+  -- gui.group.push{grow = "right", pos={10, 0}}
+  gui.Label('Mode', 10, 0, 50, 30) --, size={50,30}}
+  if gui.Checkbox({text = "Plan", checked=(game.toolMode=="plan")}, 10, 40) then
     game.toolMode="plan"
   end
-  if gui.Checkbox{text = "Fast Forward", checked=(game.toolMode=="ff")} then
+  if gui.Checkbox({text = "Fast Forward", checked=(game.toolMode=="ff")}, 10, 70) then
     game.toolMode="ff"
   end
-  gui.Label{text = "Granularity", pos={20, 0}}
-  if gui.Slider{info = game.granSlider, size={100,30}} then game.shipLine.granularity = game.granSlider.value; game.shipLine:recalculate() end
-  gui.group.pop{}
+  -- gui.Label("Granularity", 10, 100) -- {text = "Granularity", pos={20, 0}}
+  -- if gui.Slider(game.granSlider, 10, 130) then
+  --   game.shipLine.granularity = game.granSlider.value
+  --   game.shipLine:recalculate()
+  -- end
+  -- gui.group.pop{}
 end
 
 function love.draw()
@@ -228,7 +232,7 @@ function love.draw()
   end
 
   -- draw starfield
-  love.graphics.setBlendMode('premultiplied')
+  --love.graphics.setBlendMode('premultiplied')
     for i,starfield in ipairs(game.starfield) do
       local diam = starfield:getWidth()
       local x = game.cam.x*(0.25/i)%diam-diam
@@ -243,7 +247,7 @@ function love.draw()
         x = x+diam
       end
     end
-  love.graphics.setBlendMode('alpha')
+  --love.graphics.setBlendMode('alpha')
 
   -- draw ghosts from the future oooooOOOOoo
   if game.shipLine.hotPoint then
@@ -251,7 +255,7 @@ function love.draw()
   end
   game.sprites:draw(game.cam)
   game.shipLine:draw()
-  gui.core.draw()
+  gui.draw()
 
   love.graphics.setColor(255, 255, 255)
   love.graphics.push()

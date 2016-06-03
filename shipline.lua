@@ -8,7 +8,7 @@ local ShipLine = Class{
     self.future = nil
     self.interestPoints = nil -- like crash notifiers and end of the shipline
     self:recalculate()
-    
+
     self.goForward = 0
     self.goneForward = 0
     self.hotPoint = nil
@@ -20,7 +20,7 @@ function ShipLine:recalculate(startChangedT) -- TODO: optimize for nav changes o
   local lastNav = self.nav:last()
   if lastNav then lastNav=lastNav:endTime() else lastNav=0 end
   local endTime = math.max(5, lastNav+5)
-  
+
   if self.future then self.future:destroy(); self.future=nil end
   self.future = Future(self.sprites, self.nav)
   self.future.granularity = self.granularity
@@ -48,11 +48,11 @@ function ShipLine:updateInterestPoints()
 end
 
 function ShipLine:keypressed(key, code)
-  
+
 end
 
 function ShipLine:keyreleased(key, code)
-  
+
 end
 
 function ShipLine:mousepressed(x, y, button)
@@ -106,17 +106,17 @@ function ShipLine:fastForward(t)
   self.nav:moveAllBack(t, self.future)
   self.interestPoints:moveAllBack(t, self.future)
   self:recalculate()
-  
+
   --self:recalculate()
   -- local transitionLength = 2 -- sec
-  -- 
+  --
   -- self.goForwardIncrements = t/transitionLength
   -- self.goForward = t
   -- self.goneForward = 0
 end
 
 function ShipLine:mousereleased(x, y, button)
-  
+
 end
 
 function ShipLine:deselect()
@@ -136,25 +136,25 @@ function ShipLine:update(dt)
   -- if self.goForward > 0 then
   --   -- updateSprites run through callback by main, but updates self.sprites too because they are linked *magic*
   --   self:updateSprites(self.future:atInterpolate(self.goneForward))
-  --   
+  --
   --   if self.goneForward > 0 then
   --     repeat -- remove parts of line we've gone over
   --       table.remove(self.line.points, 1)
   --     until self.line.points[1].time > self.goneForward
-  --   
+  --
   --     if self.nav.points[1] then
   --       repeat -- remove navpoints we've gone over
   --         table.remove(self.nav.points, 1)
   --       until self.nav.points[1].time > self.goneForward
   --     end
-  --   
+  --
   --     if self.interestPoints.points[1] then
   --       repeat -- remove points we've gone over
   --         table.remove(self.interestPoints.points, 1)
   --       until self.interestPoints.points[1].time > self.goneForward
   --     end
   --   end
-  --       
+  --
   --   self.goForward = self.goForward - (dt*self.goForwardIncrements)
   --   self.goneForward = self.goneForward + (dt*self.goForwardIncrements)
   --   if self.goForward <= 0 then
@@ -163,7 +163,7 @@ function ShipLine:update(dt)
   --     self:recalculate()
   --   end
   -- end
-  
+
   -- look for closest point on line
   local mouse = Vector(self.cam:mousepos())
   local distMin = self.line.points[1]:vector():dist(mouse)
@@ -172,7 +172,7 @@ function ShipLine:update(dt)
     local dist = self.line.points[i]:vector():dist(mouse)
     local pointAtI = self:pointAtI(i)
     if pointAtI then dist = dist - 10 end -- Prioritize special points
-    
+
     if dist < distMin then
       distMin = dist
       self.hotPoint = self.line.points[i]
@@ -180,7 +180,7 @@ function ShipLine:update(dt)
     end
   end
   if distMin*self.cam.scale > 20 then self.hotPoint=nil end -- No hover unless 10 pixels away
-    
+
   self.clickMode = false
   if self.hotPoint then
     if self.game.toolMode == "plan" then
@@ -206,54 +206,54 @@ function ShipLine:update(dt)
     local r = -math.atan2( (mouse-self.activePoint:vector()):unpack() )+(math.pi/2)
     self.activePoint.direction = r
   end
-  
+
   self.scrollMode = false
   if self.activePoint and self.activePoint.type == 'nav' then
     self.scrollMode = 'navLength'
   end
-  
+
   if self.hotPoint then
     if self.clickMode == "extend" then
       local pcam = self.hotPoint:inCameraCoords(self.cam)
-      gui.Tooltip{text="Click to extend", pos={pcam.x, pcam.y}}
+      gui.Button("Click to extend", pcam.x, pcam.y)
     elseif self.hotPoint.type == "collision" then
       local pcam = self.hotPoint:inCameraCoords(self.cam)
-      gui.Tooltip{text="WARNING: Collision course", pos={pcam.x, pcam.y}}
+      gui.Button("WARNING: Collision course", pcam.x, pcam.y)
     elseif self.clickMode == 'ff' then
       local pcam = self.hotPoint:inCameraCoords(self.cam)
-      gui.Tooltip{text="Click to jump to here", pos={pcam.x, pcam.y}}
+      gui.Button("Click to jump to here", pcam.x, pcam.y) -- {text="Click to jump to here", pos={pcam.x, pcam.y}}
     end
   end
-  
+
 end
 
-function ShipLine:draw()  
+function ShipLine:draw()
   -- Draw ship line
   love.graphics.setLineWidth(1)
   love.graphics.setColor(255, 255, 255)
   love.graphics.line(unpack( self.line:inCameraCoords(self.cam):asLineList() ))
-  
+
   -- Draw interface points in their colors
   self.interestPoints:drawPoints(self.cam, self.future)
-  
+
   -- Draw unselected navs in bold white
   love.graphics.setLineWidth(3)
   love.graphics.setColor(255, 255, 255)
   self.nav:drawPoints(self.cam, self.future)
-  
+
   -- Draw over selected nav in green
   love.graphics.setColor(0, 255, 0)
   if self.activePoint and self.activePoint.type=='nav' then
     self.activePoint:draw(self.cam, self.future)
   end
-  
+
   -- Draw hovering circle on "hotPoint"
   love.graphics.setLineWidth(1)
   love.graphics.setColor(255, 255, 255)
   if self.hotPoint then
     local pcam = self.hotPoint:inCameraCoords(self.cam)
     love.graphics.circle('line', pcam.x, pcam.y, 6)
-  end  
+  end
 end
 
 return ShipLine

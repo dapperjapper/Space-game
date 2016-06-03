@@ -119,9 +119,10 @@ function Planet:draw(cam) -- Clean up cray cray
       self:drawRings(tempradius, dir, true)
     end
 
-    love.graphics.setStencil(function()
+    love.graphics.stencil(function()
        love.graphics.circle('fill', 0, 0, tempradius, tempradius+1)
-    end)
+    end, "replace", 1)
+    love.graphics.setStencilTest("equal", 1)
       -- Texture
       love.graphics.push()
         love.graphics.rotate(self.texR)
@@ -138,7 +139,7 @@ function Planet:draw(cam) -- Clean up cray cray
       local offsetDirSoft = offsetDir*1.75
       local offsetSoft = offsetDirSoft+offsetImage
       love.graphics.draw(softShadow, offsetSoft.x,offsetSoft.y,0, tempradius*4/softShadow:getWidth(), tempradius*4/softShadow:getHeight())
-    love.graphics.setStencil()
+    love.graphics.setStencilTest()
 
     if self.appearance.rings then
       self:drawRings(tempradius, dir, false)
