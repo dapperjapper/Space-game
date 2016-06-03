@@ -7,14 +7,14 @@ function shadowGradient(diam, contrast, inset, color) -- TODO: shadows as GLSL e
   imageData:mapPixel( function ( x, y, r, g, b, a )
     r,g,b = color[1],color[2],color[3]
     a = Vector(x, y):dist(center)*inset/diam*255
-    
+
     -- apply contrast
     local factor = (259 * (contrast + 255)) / (255 * (259 - contrast))
     a = math.max(math.min(factor * (a - 128) + 128, 255), 0)
-        
+
     return r,g,b,a
   end )
-  
+
   return love.graphics.newImage(imageData)
 end
 
@@ -29,13 +29,13 @@ function blendColor(src, dst)
   dst[2] = dst[2]/255
   dst[3] = dst[3]/255
   dst[4] = dst[4]/255
-  
+
   out = {}
   out[4] = src[4]+(dst[4]*(1-src[4]))
   out[1] = ( (src[1]*src[4])+(dst[1]*dst[4]*(1-src[4])) ) / out[4]
   out[2] = ( (src[2]*src[4])+(dst[2]*dst[4]*(1-src[4])) ) / out[4]
   out[3] = ( (src[3]*src[4])+(dst[3]*dst[4]*(1-src[4])) ) / out[4]
-  
+
   src[1] = src[1]*255
   src[2] = src[2]*255
   src[3] = src[3]*255
@@ -62,7 +62,7 @@ function blendColorOverlay(src, dst)
   dst[2] = dst[2]/255
   dst[3] = dst[3]/255
   dst[4] = dst[4]/255
-  
+
   out = {}
   if src[1] < 0.5 then
     out[1]=2*src[1]*dst[1]
@@ -80,7 +80,7 @@ function blendColorOverlay(src, dst)
     out[3]=1-(2*(1-src[3])*(1-dst[3]))
   end
   out[4] = 255
-  
+
   src[1] = src[1]*255
   src[2] = src[2]*255
   src[3] = src[3]*255
@@ -96,21 +96,21 @@ function blendColorOverlay(src, dst)
   return out
 end
 
-function gasGiantTexture(diam, props)  
+function gasGiantTexture(diam, props)
   local imageData = love.image.newImageData( 1, diam )
   local stripesA = props.stripesA
   local pixelRatio = diam/props.visualDiam
-  
+
   local stripes = {}
   for y=0,props.visualDiam do
     stripes[y] = math.random(0,255)
   end
-  
-  imageData:mapPixel(function ( x, y, r, g, b, a )   
+
+  imageData:mapPixel(function ( x, y, r, g, b, a )
     -- Base color
     r,g,b = props.color[1],props.color[2],props.color[3]
     a = 255
-    
+
     -- Blend in stripes
     local visualY = math.floor(y/pixelRatio)
     -- local visualYCeil = math.ceil(y/pixelRatio)
@@ -120,11 +120,11 @@ function gasGiantTexture(diam, props)
     -- interpolate between stripe values
     -- local stripe = interpolate(y-(visualY*pixelRatio), stripes[visualY], stripes[visualYCeil], pixelRatio)
     local stripe = stripes[visualY]
-    
-    r,g,b = unpack( blendColor({stripe, stripe, stripe, stripesA}, {r,g,b,255}) )        
+
+    r,g,b = unpack( blendColor({stripe, stripe, stripe, stripesA}, {r,g,b,255}) )
     return r,g,b,a
   end)
-    
+
   return love.graphics.newImage(imageData)
 end
 
@@ -134,22 +134,22 @@ end
 --   local perlin = perlin2D(os.time(), diam, diam, 0.55, 1, 75)
 --   local color = props.color
 --   local center = Vector(diam/2, diam/2)
---   
+--
 --   imageData:mapPixel(function ( x, y, r, g, b, a )
 --     -- local c = perlin[x+1][y+1]+127
 --     local c = math.random(127-50,127+50)
 --     c = blendColorOverlay({c,c,c,100}, color)
---     
+--
 --     -- local gradient = Class.clone({0,0,0})
 --     -- gradient[4] = Vector(x, y):dist(center)-15--*(255/5)
 --     -- print(gradient[4])
 --     -- c = blendColorOverlay(gradient, c)
---     
+--
 --     r,g,b = c[1],c[2],c[3]
 --     r,g,b = math.min(r,255),math.min(g,255),math.min(b,255)
 --     return r,g,b,255
 --   end)
---     
+--
 --   return love.graphics.newImage(imageData)
 -- end
 
@@ -164,18 +164,18 @@ function sunTexture(diam, props)
   for i=1,rays do
     rayLength[i]=math.random(diam/2-((diam/2)*rayVariance), diam/2)
   end
-  
+
   imageData:mapPixel(function ( x, y, r, g, b, a )
     local pos = Vector(x,y)
     local angle = -math.atan2( (center-pos):unpack() )+(math.pi/2)
     angle = angle%(math.pi*2)
     local length = rayLength[math.floor(angle/(math.pi*2)*rays)+1]
     local distance = pos:dist(center)
-    
+
     r,g,b,a = sunRayGradient:getPixel(0,math.min(sunRayGradient:getHeight()-1, distance/length*sunRayGradient:getHeight()))
     return r,g,b,a
   end)
-    
+
   return love.graphics.newImage(imageData)
 end
 
@@ -208,18 +208,18 @@ function ringsCanvas(diam, props)
       local ringDarkness = math.random(0,255)
       local ringColor = blendColor({ringDarkness, ringDarkness, ringDarkness, 100}, color)
       ringColor[4] = math.random(0,255)
-      
+
       love.graphics.setColor(unpack(ringColor))
       love.graphics.circle('line', diam/2,diam/2, diam/2-(i*pixelRatio*props.thickness), diam/2)
     end
   end)
-  
+
   return canvas
 end
 
 function starfieldCanvas(diam, props)
   local canvas = love.graphics.newCanvas(diam, diam)
-  
+
   canvas:renderTo(function()
     -- props.number is #stars/100px^2
     for i=1,props.number*diam/100 do
@@ -228,7 +228,7 @@ function starfieldCanvas(diam, props)
       local color = math.random(0,150)
       love.graphics.setColor(color,color,color)
       love.graphics.circle('fill', x, y, radius, radius+2)
-      
+
       -- Make it tile by drawing the 8 adjacent tiles
       love.graphics.circle('fill', x+diam, y-diam, radius, radius+2)
       love.graphics.circle('fill', x+diam, y, radius, radius+2)
@@ -240,12 +240,12 @@ function starfieldCanvas(diam, props)
       love.graphics.circle('fill', x, y-diam, radius, radius+2)
     end
   end)
-  
+
   canvas:setWrap('repeat', 'repeat')
   return canvas
 end
 
-silhouetteEffect=love.graphics.newPixelEffect([[
+silhouetteEffect=love.graphics.newShader([[
   vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 pixel_coords)
   {
     vec4 sample = texture2D(texture, texture_coords);

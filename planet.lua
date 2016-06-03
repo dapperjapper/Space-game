@@ -2,7 +2,7 @@ local Planet = Class{
   -- props = radius, mass, r, sun, orbitRadius, orbitSpeed
   init = function(self, props)
     self.type = "planet"
-    
+
     self.dx = props.dx or 0
     self.dy = props.dy or 0
     self.mass = props.mass or 1
@@ -14,7 +14,7 @@ local Planet = Class{
     self.orbitSpeed = props.orbitSpeed or 0 -- rev/sec positive for clockwise
     self.radius = props.radius or 10
     self.appearance = Class.clone(props.appearance) or {}
-    
+
     if props.tex then
       self.tex = props.tex
       self.texR = props.texR
@@ -22,7 +22,7 @@ local Planet = Class{
     else
       self:generateImages()
     end
-    
+
     self:updatePosition(0)
   end,
   __includes = {Sprite}
@@ -50,18 +50,18 @@ local softShadow = shadowGradient(50, 30, 1.5, {0, 0, 0})
 function Planet:generateImages()
   print('making images for planet #', self.id, 'size', self.radius)
   local a = self.appearance
-  
+
   if not a.type then a.type = 'gasgiant' end
-  
+
   if a.type == 'gasgiant' then
     local redOrBlue = math.random(0,1)
     local hue
     if redOrBlue < 1 then hue=math.random(0,50) else hue=math.random(128,170) end
-  
+
     a.color = {HSL(hue, math.random(0,255), math.random(50,200), 255)}
     a.shadowColor = blendColor({0, 0, 0, 200}, a.color)
     a.stripesA = math.random(0,100)
-  
+
     local ringsOrNo = math.random(0,100)
     -- 70% have rings
     if ringsOrNo < 70 then
@@ -71,11 +71,11 @@ function Planet:generateImages()
     else
       a.rings = false
     end
-  
+
     -- Image sizes are self.radius*8 so they are sharp up to a 4x zoom
     self.tex = gasGiantTexture(self.radius*2, {color=a.color, stripesA=a.stripesA, visualDiam=self.radius*2})
     self.texR = math.random(0, math.pi*2)
-  
+
     if a.rings then
       self.rings = ringsCanvas(self.radius*32, {color=a.rings.color, thickness=1, rings=a.rings.number, visualDiam=self.radius*2})
     end
@@ -92,7 +92,7 @@ end
 
 function Planet:update(dt)
   local a = self.appearance
-  
+
   if a.type == 'sun' then
     self.texAnim = (self.texAnim + (dt/4))%a.texNum
   else
@@ -110,15 +110,15 @@ function Planet:draw(cam) -- Clean up cray cray
   love.graphics.push()
   love.graphics.setColor(255,255,255)
   love.graphics.translate(pos.x, pos.y)
-  
+
   -- love.graphics.circle('fill', 0, 0, tempradius, tempradius+1)
   -- love.graphics.pop()
-    
+
   if self.appearance.type ~= 'sun' then
     if self.appearance.rings then
       self:drawRings(tempradius, dir, true)
     end
-    
+
     love.graphics.setStencil(function()
        love.graphics.circle('fill', 0, 0, tempradius, tempradius+1)
     end)
@@ -127,7 +127,7 @@ function Planet:draw(cam) -- Clean up cray cray
         love.graphics.rotate(self.texR)
         love.graphics.draw(self.tex, -tempradius,-tempradius,0, tempradius*2/self.tex:getWidth(), tempradius*2/self.tex:getHeight())
       love.graphics.pop()
-    
+
       --Shadows
       local offsetImage = Vector(-tempradius*2, -tempradius*2)
       -- (tempradius*pos:dist(sun))/(pos:dist(sun)+300) is a formula that has a asymptote at tempradius
@@ -139,56 +139,56 @@ function Planet:draw(cam) -- Clean up cray cray
       local offsetSoft = offsetDirSoft+offsetImage
       love.graphics.draw(softShadow, offsetSoft.x,offsetSoft.y,0, tempradius*4/softShadow:getWidth(), tempradius*4/softShadow:getHeight())
     love.graphics.setStencil()
-    
+
     if self.appearance.rings then
       self:drawRings(tempradius, dir, false)
     end
   else
     local a = self.appearance
-    
+
     local tex1Id = math.floor(self.texAnim)%a.texNum+1
     local tex1 = self.tex[tex1Id]
     love.graphics.setColor(255,255,255,math.min(255, 255-(self.texAnim%1*255)+50))
     love.graphics.draw(tex1, -tempradius*2,-tempradius*2,0, tempradius*4/tex1:getWidth(), tempradius*4/tex1:getHeight())
-    
+
     local tex2Id = tex1Id+1
     if tex2Id > a.texNum then tex2Id=1 end
     local tex2 = self.tex[tex2Id]
     love.graphics.setColor(255,255,255,self.texAnim%1*255)
     love.graphics.draw(tex2, -tempradius*2,-tempradius*2,0, tempradius*4/tex2:getWidth(), tempradius*4/tex2:getHeight())
   end
-    
+
   love.graphics.pop()
 end
 
 function Planet:drawRings(tempradius, dir, upsideDown)
-  local persp = 4
-  local ringWidth = tempradius / (0.25-(self.appearance.rings.number/self.rings:getWidth()))
-  local ringHeight = tempradius*2/persp
-  local ringStencil = love.graphics.newStencil(function()
-    love.graphics.circle('fill', 0,0, tempradius, tempradius+1)
-  end)
-  local ringShadowStencil = love.graphics.newStencil(function()
-    love.graphics.setLineWidth(tempradius*2)
-    love.graphics.line(0,0, -dir.x*ringWidth, -dir.y*ringWidth)
-  end)
-  if upsideDown then upsideDown=-1 else upsideDown=1 end
-  
-  love.graphics.setBlendMode('premultiplied')
-    love.graphics.setInvertedStencil(ringShadowStencil)
-      love.graphics.push()
-      love.graphics.rotate(self.texR)
-      love.graphics.draw(self.rings, -ringWidth/2,-ringHeight*upsideDown,0, ringWidth/self.rings:getWidth(), ringHeight/self.rings:getHeight()*upsideDown)
-      love.graphics.pop()
-    love.graphics.setStencil(ringShadowStencil)
-      love.graphics.setPixelEffect(silhouetteEffect)
-        love.graphics.push()
-        love.graphics.rotate(self.texR)
-        love.graphics.draw(self.rings, -ringWidth/2,-ringHeight*upsideDown,0, ringWidth/self.rings:getWidth(), ringHeight/self.rings:getHeight()*upsideDown)
-        love.graphics.pop()
-      love.graphics.setPixelEffect()
-    love.graphics.setStencil()
-  love.graphics.setBlendMode('alpha')
+  -- local persp = 4
+  -- local ringWidth = tempradius / (0.25-(self.appearance.rings.number/self.rings:getWidth()))
+  -- local ringHeight = tempradius*2/persp
+  -- local ringStencil = love.graphics.newStencil(function()
+  --   love.graphics.circle('fill', 0,0, tempradius, tempradius+1)
+  -- end)
+  -- local ringShadowStencil = love.graphics.newStencil(function()
+  --   love.graphics.setLineWidth(tempradius*2)
+  --   love.graphics.line(0,0, -dir.x*ringWidth, -dir.y*ringWidth)
+  -- end)
+  -- if upsideDown then upsideDown=-1 else upsideDown=1 end
+  --
+  -- love.graphics.setBlendMode('premultiplied')
+  --   love.graphics.setInvertedStencil(ringShadowStencil)
+  --     love.graphics.push()
+  --     love.graphics.rotate(self.texR)
+  --     love.graphics.draw(self.rings, -ringWidth/2,-ringHeight*upsideDown,0, ringWidth/self.rings:getWidth(), ringHeight/self.rings:getHeight()*upsideDown)
+  --     love.graphics.pop()
+  --   love.graphics.setStencil(ringShadowStencil)
+  --     love.graphics.setShader(silhouetteEffect)
+  --       love.graphics.push()
+  --       love.graphics.rotate(self.texR)
+  --       love.graphics.draw(self.rings, -ringWidth/2,-ringHeight*upsideDown,0, ringWidth/self.rings:getWidth(), ringHeight/self.rings:getHeight()*upsideDown)
+  --       love.graphics.pop()
+  --     love.graphics.setShader()
+  --   love.graphics.setStencil()
+  -- love.graphics.setBlendMode('alpha')
 end
 
 function Planet:drawGhost(cam, simpleClone)
@@ -213,20 +213,20 @@ function Planet:makeBox2D(world)
   local box2D = {}
   box2D.body = love.physics.newBody(world, self.x, self.y, "kinematic")
   box2D.shape = love.physics.newCircleShape(self.radius)
-  
+
   box2D.fixture = love.physics.newFixture(box2D.body, box2D.shape, 1)
-  
+
   box2D.fixture:setUserData({sprite = self})
-  
+
   box2D.body:setMass(self.mass)
   box2D.body:setLinearVelocity(self.dx, self.dy)
   box2D.body:setFixedRotation(true)
-  
+
   self.box2D = box2D
 end
 
 function Planet:updateFromBox2D() -- self.r for planet modified in Future:simulateTo loop
-  self.x, self.y = self.box2D.body:getPosition()      
+  self.x, self.y = self.box2D.body:getPosition()
   --self.dx, self.dy = self.box2D.body:getLinearVelocity()
 end
 

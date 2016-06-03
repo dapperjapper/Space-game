@@ -31,21 +31,21 @@ game.qualitySlider = {value = 10, min = 1, max = 10}
 math.randomseed( tonumber(tostring(os.time()):reverse():sub(1,6))/1000000 )
 
 function love.load()
-  love.graphics.setCaption("Planetary")
+  -- love.graphics.setCaption("Planetary")
   love.physics.setMeter(10)
-  
+
   game.cursors = {}
-  for _,f in ipairs(love.filesystem.enumerate('cursors/')) do
+  for _,f in ipairs(love.filesystem.getDirectoryItems('cursors/')) do
     local name = string.match(f, '(.+).gif$')
     if name then game.cursors[name] = love.graphics.newImage( 'cursors/' .. f ) end
   end
   love.mouse.setVisible(false)
-  
+
   -- http://designfestival.com/the-cicada-principle-and-why-it-matters-to-web-designers/
   game.starfield = {starfieldCanvas(500, {number = 10}), starfieldCanvas(700, {number = 10})}
-  
+
   game.sprites = SpriteList()
-  
+
   -- ship = Sprite()
   -- ship.type = "ship"
   -- ship.x = 650/2-20.35 -- megameters
@@ -54,7 +54,7 @@ function love.load()
   -- ship.power = 1
   -- ship.mass = 1
   -- table.insert( game.sprites, ship )
-  -- 
+  --
   -- planet = Sprite()
   -- planet.type = "planet"
   -- planet.x = 650/2
@@ -62,24 +62,24 @@ function love.load()
   -- planet.radius = 6.3781 -- megameters
   -- planet.mass = 5.97219*(10^15) -- teragrams
   -- table.insert( game.sprites, planet )
-  
+
    -- for angles: in radians and 0 = to the right
-    
+
   local planet = Planet({ sun={650/2, 650/2}, radius=50, mass=500, appearance={type='sun'} })
   game.sprites:add(planet)
-  
+
   for i=5,30,2 do
     local planet2 = Planet({ sun=planet, radius=i, orbitRadius=math.random(200,1000), r=math.pi*2/25*i, mass=500, orbitSpeed=0.1 })
     game.sprites:add(planet2)
   end
-  
+
   local ship = Ship(650/2-200, 650/2-200, 'ship')
   ship.dx = 200
   ship.power = 1
   ship.mass = 1
   ship.radius = 1 -- circle collision radius
   game.sprites:add(ship)
-      
+
   game.cam = Camera(ship.x, ship.y)
   function game.cam:zoomPos(zoom, x, y)
     -- http://stackoverflow.com/a/13317413
@@ -92,15 +92,15 @@ function love.load()
     self:move( delta:unpack() )
     self:zoom(zoom)
   end
-  
+
   game.shipLine = ShipLine(game)
   game.shipLine.granularity = game.granSlider.value
   function game.shipLine:updateSprites(newSprites)
     game.sprites:importSimple(newSprites)
   end
-  
+
   game.toolMode = 'plan'
-    
+
   -- for n in pairs(_G) do print(n) end -- TODO: clean global variables
 end
 
@@ -112,7 +112,7 @@ function love.keypressed(key, code)
     ProFi:stop()
     ProFi:writeReport( '/Users/jasper/Documents/Projects/Offline/planetary/love/profile.txt' )
   end
-  
+
   if key == ' ' then
     game.oldMode = game.toolMode
     game.toolMode = 'pan'
@@ -132,12 +132,12 @@ end
 
 function love.mousepressed(x, y, button)
   local zoomPower = 1.1
-  
+
   if not game.mouseinzone() then return end
-  
+
   game.mouseStartCam = Vector(game.cam:pos())
   game.mouseStart = Vector(x, y)
-  
+
   -- basic zoom and drag if shipLine isn't using mouse movements
   if button == "l" then
     if game.clickMode ~= 'pan' then game.shipLine:mousepressed(x, y, button); return end -- shipLine captured event
@@ -155,16 +155,16 @@ end
 function love.mousereleased(x, y, button)
     if game.mouseStart then
     local moved = game.mouseStart-Vector(x, y)
-    
+
     if button == "l" then
         if game.clickMode == 'pan' and game.mouseStart then
           if (moved.x == 0 and moved.y == 0) then -- didn't move at all, we have a click on our hands
             game.shipLine:deselect()
           end
         end
-  
+
         if not game.mouseinzone() then return end
-  
+
         if game.clickMode == 'navDir' then
           if (moved.x == 0 and moved.y == 0) then
             -- if clicked to create - navDir aligns to ship direction at that point
@@ -174,7 +174,7 @@ function love.mousereleased(x, y, button)
         end
     end
   end
-    
+
   if button == "l" then
     game.mouseStart = nil
     game.mouseStartCam = nil
@@ -186,12 +186,12 @@ function love.update(dt)
   if love.mouse.isDown('l') and game.clickMode == 'pan' and game.mouseStart then
     game.cam:lookAt( ( (game.mouseStart-Vector(love.mouse.getPosition()))/game.cam.scale+game.mouseStartCam ):unpack() )
   end
-  
+
   game.shipLine:update(dt)
   game.sprites:update(dt)
   game.clickMode = game.shipLine.clickMode or 'pan'
   game.scrollMode = game.shipLine.scrollMode or 'zoom'
-  
+
   if game.clickMode == 'pan' and game.scrollMode == 'zoom' then
     game.cursor = 'pan'
   elseif game.clickMode == 'addNav' then
@@ -203,7 +203,7 @@ function love.update(dt)
   else
     game.cursor = 'normal'
   end
-  
+
   gui.group.push{grow = "right", pos={10, 0}}
   gui.Label{text = 'Mode', size={50,30}}
   if gui.Checkbox{text = "Plan", checked=(game.toolMode=="plan")} then
@@ -226,7 +226,7 @@ function love.draw()
     love.graphics.print("ScrollMode: "..tostring(game.scrollMode), 10, 70)
     love.graphics.print("Memory: "..tostring(math.floor(collectgarbage("count")/1000)), 10, 80)
   end
-  
+
   -- draw starfield
   love.graphics.setBlendMode('premultiplied')
     for i,starfield in ipairs(game.starfield) do
@@ -244,15 +244,15 @@ function love.draw()
       end
     end
   love.graphics.setBlendMode('alpha')
-  
+
   -- draw ghosts from the future oooooOOOOoo
   if game.shipLine.hotPoint then
     game.sprites:drawGhosts(game.cam, game.shipLine.future:at(game.shipLine.hotPoint.time))
   end
   game.sprites:draw(game.cam)
-  game.shipLine:draw()  
+  game.shipLine:draw()
   gui.core.draw()
-  
+
   love.graphics.setColor(255, 255, 255)
   love.graphics.push()
   love.graphics.translate(love.mouse.getPosition())

@@ -43,7 +43,8 @@ end
 gradient:set(200,255)
 
 local function box(x,y,w,h, bg, border, flip)
-	love.graphics.setLine(1, 'rough')
+	love.graphics.setLineWidth(1)
+	love.graphics.setLineStyle('rough')
 
 	love.graphics.setColor(bg)
 	local sy = flip and -h/2 or h/2
@@ -88,7 +89,7 @@ local function radiusRectangle(w, h, r)
   local y1 = -h/2
   local x2 = w/2
   local y2 = h/2
-  
+
   local times = {}
   if vx ~= 0 then
     times[1] = x1/vx
@@ -98,18 +99,18 @@ local function radiusRectangle(w, h, r)
     times[3] = y1/vy
     times[4] = y2/vy
   end
-  
+
   local minT = w+h -- larger than all
   for _,v in ipairs(times) do
     if v<minT and v>0 then minT = v end
   end
-  
+
   return minT
 end
 
 local function Tooltip(state, text, x, y)
 	local f = assert(love.graphics.getFont())
-	
+
 	w = f:getWidth(text)+8
 	h = f:getHeight(text)+4
 	local point = Vector(x, y)
@@ -120,7 +121,7 @@ local function Tooltip(state, text, x, y)
 	local distance = radiusRectangle(w, h, angle) * 1.1 + 10
 	direction = direction * distance
 	local pos = middle - direction
-	
+
 	love.graphics.setColor(0, 0, 0)
 	love.graphics.rectangle( "fill", pos.x, pos.y, w, h )
 	love.graphics.setColor(255, 255, 255)
@@ -130,8 +131,9 @@ end
 
 local function Slider(state, fraction, vertical, x,y,w,h)
 	local c = color[state]
-	
-	love.graphics.setLine(1, 'rough')
+
+	love.graphics.setLineWidth(1)
+love.graphics.setLineStyle('rough')
 	love.graphics.setColor(c.bg)
 	if vertical then
 		love.graphics.rectangle('fill', x+w/2-2,y,4,h)
@@ -154,7 +156,8 @@ local function Slider2D(state, fraction, x,y,w,h)
 	box(x,y,w,h, c.bg, c.border)
 
 	-- draw quadrants
-	love.graphics.setLine(1, 'rough')
+	love.graphics.setLineWidth(1)
+love.graphics.setLineStyle('rough')
 	love.graphics.setColor(c.fg[1], c.fg[2], c.fg[3], math.min(127,c.fg[4] or 255))
 	love.graphics.line(x+w/2,y, x+w/2,y+h)
 	love.graphics.line(x,y+h/2, x+w,y+h/2)
@@ -177,7 +180,8 @@ local function Input(state, text, cursor, x,y,w,h)
 	local offset = 2 - math.floor((cursorPos-x) / (w-4)) * (w-4)
 
 	love.graphics.setScissor(x+1,y,w-2,h)
-	love.graphics.setLine(1, 'rough')
+	love.graphics.setLineWidth(1)
+love.graphics.setLineStyle('rough')
 	love.graphics.setColor(color.normal.fg)
 	love.graphics.print(text, x+offset,y+(h-th)/2)
 	if state ~= 'normal' then
